@@ -1,12 +1,67 @@
 import numpy as np
+import matplotlib.pyplot as plt
 import os
+import tree_utils as utils
 clear = lambda : os.system('clear')
+
+
+class Node():
+    def __init__(
+        self, 
+        feature_index=None, 
+        threshold=None, 
+        left=None, 
+        right=None, 
+        info_gain=None, 
+        value=None
+    ):
+        ''' constructor ''' 
+        
+        # for decision node
+        self.feature_index = feature_index
+        self.threshold = threshold
+        self.left = left
+        self.right = right
+        self.info_gain = info_gain
+        
+        # for leaf node
+        self.value = value
+
+
 
 class ClassificationTree:
 
     def __init__(self, min_samples, max_depth):
         self.min_samples = min_samples
         self.max_depth = max_depth 
+
+
+    def build_tree(self, dataset, curr_depth=0):
+        ''' recursive function to build the tree ''' 
+        
+        X, Y = dataset[:,:-1], dataset[:,-1]
+        num_samples, num_features = np.shape(X)
+        
+        # split until stopping conditions are met
+        if num_samples >= self.min_samples and curr_depth <= self.max_depth:
+            # find the best split
+            best_split = self.get_best_split(dataset, num_features)
+            # check if information gain is positive
+            if best_split["info_gain"]>0:
+                # recur left
+                left_subtree = self.build_tree(best_split["dataset_left"], curr_depth+1)
+                # recur right
+                right_subtree = self.build_tree(best_split["dataset_right"], curr_depth+1)
+                # return decision node
+                return Node(best_split["feature_index"], best_split["threshold"], 
+                            left_subtree, right_subtree, best_split["info_gain"])
+        
+        # compute leaf node
+        leaf_value = np.unique(Y)[
+            np.array([*np.unique(Y, return_counts=True)])[1].argmax()
+        ]
+        # return leaf node
+        return Node(value=leaf_value)
 
 
     def get_best_split(self, dataset, num_features):
@@ -25,12 +80,12 @@ class ClassificationTree:
             # loop over all the feature values present in the data
             for threshold in possible_thresholds:
                 # get current split
-                dataset_left, dataset_right = self.split(dataset, feature_index, threshold)
+                dataset_left, dataset_right = utils.split(dataset, feature_index, threshold)
                 # check if childs are not null
                 if len(dataset_left) > 0 and len(dataset_right) > 0:
                     y, left_y, right_y = dataset[:, -1], dataset_left[:, -1], dataset_right[:, -1]
                     # compute information gain
-                    curr_info_gain = self.information_gain(y, left_y, right_y, "gini")
+                    curr_info_gain = utils.information_gain(y, left_y, right_y, "gini")
                     # update the best split if needed
                     if curr_info_gain > max_info_gain:
                         best_split["feature_index"] = feature_index
@@ -42,68 +97,35 @@ class ClassificationTree:
 
         return best_split
 
+g11 = np.random.normal(size=(10, 2)) + np.array([2, 2])
+g12 = np.random.normal(size=(10, 2)) + np.array([0, 10])
+labels = np.zeros(20).reshape((-1, 1))
+labels[10:] += 1
+g1 = np.hstack((np.vstack((g11, g12)), labels))
+g21 = np.random.normal(size=(10, 2)) + np.array([8, 0])
+g22 = np.random.normal(size=(10, 2)) + np.array([-3, -3])
+labels = np.ones(20).reshape((-1, 1))
+labels[:10] += 1
+labels[10:] += 2
+g2 = np.hstack((np.vstack((g21, g22)), labels))
 
-    def information_gain(
-        self, 
-        parent:np.ndarray, 
-        left:np.ndarray, 
-        right:np.ndarray, 
-        method='gini'
-    ) -> float:
+dataset = np.vstack((g1, g2))
 
-        """
-        Find the information gain on a split from a parent group.
-        """
+plt.scatter(dataset[:, 0], dataset[:, 1], c=dataset[:, 2])
+plt.show()
 
-        left_weight = len(left) / len(parent)
-        right_weight = len(right) / len(parent)
-
-        if method == 'gini':
-            gain = self.gini_index(parent)
-            gain -= left_weight * self.gini_index(left)
-            gain -= right_weight * self.gini_index(right) 
-            return gain
-        
-        else:
-            return -1 * np.inf
-
-
-    @staticmethod
-    def gini_index(y):
-    
-        ''' 
-        function to compute gini index
-        '''
-        
-        class_labels = np.unique(y)
-        gini = 0
-        for label in class_labels:
-            p_cls = len(y[y == label]) / len(y)
-            gini += p_cls**2
-    
-        return 1 - gini
-
-
-    @staticmethod
-    def split(dataset:np.ndarray, index:int, threshold:float) -> tuple:
-        """
-        Split a dataset into a left child and right child based on a feature 
-        and threshold. feature < split is affirmative, feature >= split is the 
-        alternative.
-        """
-
-        left_dataset = dataset[dataset[:, index] < threshold]
-        right_dataset = dataset[dataset[:, index] >= threshold]
-        return left_dataset, right_dataset
-
-
-dataset = np.vstack((np.arange(5), np.arange(5), np.array([1, 1, 2, 2, 2]))).T
-
-dataset
 
 dec = ClassificationTree(2, 2)
 
 best = dec.get_best_split(dataset, 2)
 
-best['dataset_left']
-best['dataset_right']
+root = dec.build_tree(dataset)
+
+root.right.value
+
+root.left.left.value
+
+root.left.right.right.value
+
+root.left.right.left.value
+

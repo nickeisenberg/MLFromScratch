@@ -15,7 +15,6 @@ class Foo:
                     return to recursion 0.
         recursion 0: third bar is called/ stop = 7 if statement fails.
         """
-
         self.stop += 1
         print(self.stop)
         if self.stop < 3:
@@ -26,6 +25,7 @@ class Foo:
             self.bar()
             print('third')
             self.bar()
+            return 'a'
         else:
             print('if condition not met')
         return self.num_if_calls
