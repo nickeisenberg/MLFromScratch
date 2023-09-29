@@ -15,6 +15,8 @@ classifier = ClassificationTree(2, 2)
 
 classifier.fit(dataset[:, :-1], dataset[:, -1].reshape((-1, 1)))
 
+classifier.print_tree()
+
 preds = classifier.predict(dataset[:, :-1])
 
 plt.scatter(dataset[:, 0], dataset[:, 1], c=preds)

@@ -131,3 +131,21 @@ class ClassificationTree:
                 return self.predit_single(x, tree.left)
             else:
                 return self.predit_single(x, tree.right)
+
+
+    def print_tree(self, tree=None, indent=" "):
+        """
+        Print out the tree
+        """
+
+        if tree is None:
+            tree = self.root
+            
+        if tree.value is not None:
+            print (tree.value)
+        else:
+            print("X_"+str(tree.feature_index), "<=", tree.threshold, "?", tree.info_gain)
+            print(f"{indent}left:", end="")
+            self.print_tree(tree.left, indent + indent)
+            print(f"{indent}right:", end="")
+            self.print_tree(tree.right, indent + indent)
