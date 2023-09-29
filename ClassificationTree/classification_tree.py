@@ -2,6 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import tree_utils as utils
+from sklearn.datasets import make_classification, make_blobs
+
+
 clear = lambda : os.system('clear')
 
 
@@ -34,6 +37,7 @@ class ClassificationTree:
     def __init__(self, min_samples, max_depth):
         self.min_samples = min_samples
         self.max_depth = max_depth 
+        self.root = None
 
 
     def build_tree(self, dataset, curr_depth=0):
@@ -97,35 +101,33 @@ class ClassificationTree:
 
         return best_split
 
-g11 = np.random.normal(size=(10, 2)) + np.array([2, 2])
-g12 = np.random.normal(size=(10, 2)) + np.array([0, 10])
-labels = np.zeros(20).reshape((-1, 1))
-labels[10:] += 1
-g1 = np.hstack((np.vstack((g11, g12)), labels))
-g21 = np.random.normal(size=(10, 2)) + np.array([8, 0])
-g22 = np.random.normal(size=(10, 2)) + np.array([-3, -3])
-labels = np.ones(20).reshape((-1, 1))
-labels[:10] += 1
-labels[10:] += 2
-g2 = np.hstack((np.vstack((g21, g22)), labels))
 
-dataset = np.vstack((g1, g2))
+    def fit(self, X, y):
+        dataset = np.hstack((X, y))
+        self.root = self.build_tree(dataset)
+    
 
-plt.scatter(dataset[:, 0], dataset[:, 1], c=dataset[:, 2])
-plt.show()
+    def predict(self, X):
+        """
+        Predict a sample set of features
+        """
+
+        if self.root is None:
+            raise Exception("run fit before predict")
+
+        preds = np.array([self.predit_single(x, self.root) for x in X])
+
+        return preds
 
 
-dec = ClassificationTree(2, 2)
-
-best = dec.get_best_split(dataset, 2)
-
-root = dec.build_tree(dataset)
-
-root.right.value
-
-root.left.left.value
-
-root.left.right.right.value
-
-root.left.right.left.value
-
+    def predit_single(self, x, tree):
+        """
+        Predict a single data point
+        """
+        if tree.value is not None:
+            return tree.value
+        else:
+            if x[tree.feature_index] < tree.threshold:
+                return self.predit_single(x, tree.left)
+            else:
+                return self.predit_single(x, tree.right)
