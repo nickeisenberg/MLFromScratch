@@ -122,6 +122,7 @@ class DecoderBlock(nn.Module):
 
         return x
 
+
 class UNet(nn.Module):
     
     def __init__(
@@ -145,47 +146,3 @@ class UNet(nn.Module):
         out = self.output(d1)
 
         return out
-
-
-
-#--------------------------------------------------
-# Testing
-#--------------------------------------------------
-inputs = torch.randn(size=(16, 3, 64, 64))
-
-
-cb = ConvBlock(3, 16)
-cb_out = cb(inputs)
-cb_out.shape
-
-eb = EncoderBlock(3, 16)
-eb_out = eb(inputs)
-eb_out[0].shape
-eb_out[1].shape
-
-
-b = ConvBlock(16, 32)
-b(eb_out[1]).shape
-
-db = DecoderBlock(32, 16)
-
-db(b(eb_out[1]), eb_out[0]).shape
-
-convT = nn.ConvTranspose2d(
-    32,
-    16,
-    stride=2,
-    padding=0,
-    kernel_size=2
-)
-
-convT(b(eb_out[1])).shape
-
-eb_out[0].shape
-
-conv = ConvBlock(32, 16)
-
-conv(torch.cat(
-    (convT(b(eb_out[1])),eb_out[0]), axis=1
-)).shape
-
