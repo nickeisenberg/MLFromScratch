@@ -39,6 +39,7 @@ class ConvBlock(nn.Module):
             padding=1,
             kernel_size=3
         )
+        self.b1 = nn.BatchNorm2d
 
         self.conv2 = nn.Conv2d(
             out_channels,
@@ -47,6 +48,10 @@ class ConvBlock(nn.Module):
             padding=1,
             kernel_size=3
         )
+        self.b2 = nn.BatchNorm2d
+
+        self.relu = nn.ReLU(inplace=True)
+
 
     def forward(
             self, 
@@ -54,9 +59,12 @@ class ConvBlock(nn.Module):
             ):
 
         x = self.conv1(inputs)
-        x = nn.ReLU()(x)
+        x = self.b1(x)
+        x = self.relu(x)
+
         x = self.conv2(x)
-        x = nn.ReLU()(x)
+        x = self.b2(x)
+        x = self.relu(x)
 
         return x
 
@@ -109,6 +117,10 @@ class DecoderBlock(nn.Module):
 
         self.convblock = ConvBlock(2 * out_channels, out_channels)
 
+        self. bn1T = nn.BatchNorm2d
+
+        self.relu = nn.ReLU(inplace=True)
+
 
     def forward(
             self, 
@@ -117,7 +129,10 @@ class DecoderBlock(nn.Module):
             ):
 
         x = self.convT(inputs)
-        x = torch.cat((x, skip), axis=1)
+        x = self.bn1T(x)
+        x = self.relu(x)
+
+        x = torch.cat([x, skip], dim=1)
         x = self.convblock(x)
 
         return x
