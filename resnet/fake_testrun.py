@@ -1,8 +1,10 @@
 import torch
+import os
 from torch.utils.data import random_split
 from model import ResNet 
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
+import subprocess
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -25,6 +27,17 @@ class CustomImageDataset(Dataset):
         return img, label
 
 
+def validation_step():
+    val_loss = 0
+    for inputs, labels in val_dataloader:
+        inputs, labels = inputs.to(device), labels.to(device)
+        outputs = torch.max(resnet(inputs), dim=-1, keepdim=False).values
+        loss = loss_fn(outputs, labels)
+        val_loss += loss.item()
+    avg_val_loss = np.round(val_loss / len(val_dataloader), 3)
+    return avg_val_loss
+
+
 def train_one_epoch(epoch):
    
     epoch_loss = 0
@@ -41,7 +54,7 @@ def train_one_epoch(epoch):
         labels = labels.to(device)
     
         optimizer.zero_grad()
-        outputs = torch.max(resnet(inputs), dim=-1 keepdim=False).values
+        outputs = torch.max(resnet(inputs), dim=-1, keepdim=False).values
         loss = loss_fn(outputs, labels)
         
         optimizer.step()
@@ -52,14 +65,7 @@ def train_one_epoch(epoch):
     avg_epoch_loss = np.round(epoch_loss / batch_num, 3)
 
     with torch.no_grad():
-        val_loss = 0
-        for inputs, labels in val_dataloader:
-            inputs, labels = inputs.to(device), labels.to(device)
-            outputs = torch.max(resnet(inputs), dim=-1, keepdim=False).values
-            loss = loss_fn(outputs, labels)
-            val_loss += loss.item()
-
-    avg_val_loss = np.round(val_loss / len(val_dataloader), 3)
+        avg_val_loss = validation_step()
 
     print(f"EPOCH LOSS {avg_epoch_loss} VALIDATION LOSS {avg_val_loss}")
 
@@ -68,6 +74,24 @@ def train_one_epoch(epoch):
 
 imgs = torch.randn((20000, 3, 128, 128))
 labels = torch.randint(0, 10, (20000,))
+
+def dataset_and_dataloader_from_dir(path: str,
+                                    amt: float | str):
+
+    memfree = subprocess.run(
+        "cat /proc/meminfo | grep MemFree",
+        shell=True,
+        stdout=subprocess.PIPE
+    )
+    memfree = float(memfree.stdout.decode("utf-8").split(" ")[-2])
+
+    size = 0 
+    for f in os.listdir(path):
+        size += os.path.getsize(os.path.join(path, f))
+
+        if size > .8 * memfree:
+            break
+
 
 dataset = CustomImageDataset(image_data=imgs, labels=labels)
 
