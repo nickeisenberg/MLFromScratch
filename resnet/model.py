@@ -1,5 +1,6 @@
 import torch.nn as nn
 
+
 class ConvBlock(nn.Module):
 
     def __init__(self, in_channels, out_channels, stride=1):
@@ -44,7 +45,6 @@ class ConvBlock(nn.Module):
         out = self.relu(out)
 
         return out
-
 
 
 class ResNet(nn.Module):
