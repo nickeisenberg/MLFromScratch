@@ -39,7 +39,7 @@ class ConvBlock(nn.Module):
             padding=1,
             kernel_size=3
         )
-        self.b1 = nn.BatchNorm2d
+        self.b1 = nn.BatchNorm2d(out_channels)
 
         self.conv2 = nn.Conv2d(
             out_channels,
@@ -48,7 +48,7 @@ class ConvBlock(nn.Module):
             padding=1,
             kernel_size=3
         )
-        self.b2 = nn.BatchNorm2d
+        self.b2 = nn.BatchNorm2d(out_channels)
 
         self.relu = nn.ReLU(inplace=True)
 
@@ -117,7 +117,7 @@ class DecoderBlock(nn.Module):
 
         self.convblock = ConvBlock(2 * out_channels, out_channels)
 
-        self. bn1T = nn.BatchNorm2d
+        self. bn1T = nn.BatchNorm2d(out_channels)
 
         self.relu = nn.ReLU(inplace=True)
 
