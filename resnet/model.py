@@ -83,3 +83,6 @@ class ResNet(nn.Module):
         x = self.linear(x)
 
         return x
+
+
+

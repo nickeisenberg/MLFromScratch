@@ -2,24 +2,20 @@ import torch
 import torch.nn as nn
 
 
-class CNNBlock(nn.Module): 
-	def __init__(self, in_channels, out_channels, use_batch_norm=True, **kwargs): 
+class ConvBlock(nn.Module): 
+	def __init__(self, in_channels, out_channels, **kwargs): 
 		super().__init__()
-		self.use_batch_norm = use_batch_norm 
-		self.conv = nn.Conv2d(in_channels, out_channels, bias=(not use_batch_norm), **kwargs) 
+		self.conv = nn.Conv2d(in_channels, out_channels, **kwargs) 
 		self.bn = nn.BatchNorm2d(out_channels) 
 		self.activation = nn.LeakyReLU(0.1) 
 
 	def forward(self, x): 
 		x = self.conv(x) 
-		if self.use_batch_norm: 
-			x = self.bn(x) 
-			return self.activation(x) 
-		else: 
-			return x
+		x = self.bn(x) 
+		return self.activation(x) 
 
 class ResBlock(nn.Module):
-    def __init__(self, channels, use_residual, num_repeats):
+    def __init__(self, channels, use_residual=True, num_repeats=1):
         super().__init__()
         self.use_residual = use_residual
         self.num_repeats = num_repeats
@@ -28,12 +24,14 @@ class ResBlock(nn.Module):
         for _ in range(num_repeats):
             self._layers.append(
                 nn.Sequential(
-                    nn.Conv2d(channels, channels // 2, kernel_size=1),
-                    nn.BatchNorm2d(channels // 2),
-                    nn.LeakyReLU(.1),
-                    nn.Conv2d(channels // 2, channels, kernel_size=3, padding=1),
-                    nn.BatchNorm2d(channels // 2),
-                    nn.LeakyReLU(.1)
+                    # nn.Conv2d(channels, channels // 2, kernel_size=1),
+                    # nn.BatchNorm2d(channels // 2),
+                    # nn.LeakyReLU(.1),
+                    # nn.Conv2d(channels // 2, channels, kernel_size=3, padding=1),
+                    # nn.BatchNorm2d(channels),
+                    # nn.LeakyReLU(.1)
+                    ConvBlock(channels, channels // 2, kernel_size=1),
+                    ConvBlock(channels // 2, channels, kernel_size=3, padding=1)
                 )
             )
         self.layers = nn.ModuleList(self._layers)
@@ -46,13 +44,14 @@ class ResBlock(nn.Module):
                 x += residual
             return x
 
-class ScalePredictionBlocl(nn.Module):
+class ScalePredictionBlock(nn.Module):
     def __init__(self, in_channels, num_classes):
         super().__init__()
         self.pred = nn.Sequential( 
-            nn.Conv2d(in_channels, 2 * in_channels, kernel_size=3, padding=1), 
-            nn.BatchNorm2d(2 * in_channels), 
-            nn.LeakyReLU(0.1), 
+            # nn.Conv2d(in_channels, 2 * in_channels, kernel_size=3, padding=1), 
+            # nn.BatchNorm2d(2 * in_channels), 
+            # nn.LeakyReLU(0.1),
+            ConvBlock(in_channels, 2 * in_channels, kernel_size=3, padding=1),
             nn.Conv2d(2 * in_channels, (num_classes + 5) * 3, kernel_size=1), 
         ) 
         self.num_classes = num_classes 
@@ -64,13 +63,51 @@ class ScalePredictionBlocl(nn.Module):
         )
         return output
 
+class (nn.Module):
+    def __init__(self, in_channels):
+        super().__init__()
+        self.upsampler = nn.Sequential(
+            ResBlock(in_channels, use_residual=False, num_repeats=2)
+            ConvBlock(in_channels, in_channels // 2, kernel_size=1, stride=1, padding=0)
+        )
+
+    def forward(self, x):
+        return self.upsampler(x)
+
+
 class Yolo(nn.Module):
     def __init__(self):
         super().__init__()
 
 
+input = torch.randn(1, 3, 256, 256)
+c1 = ConvBlock(3, 32, kernel_size=3, stride=1, padding=1)(input)
+c2 = ConvBlock(32, 64, kernel_size=3, stride=2, padding=1)(c1)
+r1 = ResBlock(64)(c2)
+c3 = ConvBlock(64, 128, kernel_size=3, stride=2, padding=1)(r1)
+r2 = ResBlock(128, num_repeats=2)(c3)
+c4 = ConvBlock(128, 256, kernel_size=3, stride=2, padding=1)(r2)
+scale3 = ResBlock(256, num_repeats=8)(c4)
+c5 = ConvBlock(256, 512, kernel_size=3, stride=2, padding=1)(scale3)
+scale2 = ResBlock(512, num_repeats=8)(c5)
+c6 = ConvBlock(512, 1024, kernel_size=3, stride=2, padding=1)(scale2)
+scale1 = ResBlock(1024, num_repeats=8)(c6)
+scale1_pred = ScalePredictionBlock(1024, 10)(scale1)
 
-x = torch.randn(10, 3, 16, 16)
+input.shape
+c1.shape
+c2.shape
+r1.shape
+c3.shape
+r2.shape
+c4.shape
+scale3.shape
+c5.shape
+scale2.shape
+c6.shape
+scale1.shape
+scale1_pred.shape
+
 
 x.reshape((-1, 3, -1))
 
