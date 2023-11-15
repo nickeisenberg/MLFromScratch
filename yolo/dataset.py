@@ -67,16 +67,13 @@ FLIRROOT = os.path.join(
     HOME, 'Datasets', 'flir'
 )
 TRAINROOT = os.path.join(
-    HOME, 'Datasets', 'flir', 'images_thermal_train'
+    FLIRROOT, 'images_thermal_train'
 )
 ANNOT_FILE_PATH = os.path.join(
-    HOME, FLIRROOT, 'images_thermal_train', 'coco.json'
+    TRAINROOT , 'coco.json'
 )
 with open(ANNOT_FILE_PATH, 'r') as oj:
     annotations = json.load(oj)
-
-annotations['images'][0]
-annotations['annotations'][0]
 
 dataset = Dataset(
     ANNOT_FILE_PATH, 'images', 'annotations', 'file_name', 'id', 'bbox', 
