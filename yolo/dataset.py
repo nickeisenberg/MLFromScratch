@@ -84,7 +84,3 @@ for im, a in dataset:
     im.show()
     print(len(a))
     break
-
-
-
-
