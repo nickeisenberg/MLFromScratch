@@ -42,9 +42,11 @@ class Dataset(_Dataset):
         self.bbox_image_id = bbox_image_id
         self.bbox_category_id = bbox_category_id
         #--------------------------------------------------
-
-        self.transform = transforms
+        
+        # optionals
+        self.transforms = transforms
         self.fix_file_path = fix_file_path
+        #--------------------------------------------------
 
     def __len__(self):
         return len(self.annot[self.annot_image_key])
@@ -53,13 +55,21 @@ class Dataset(_Dataset):
         img_path = self.annot[self.annot_image_key][idx][self.image_file_name]
         if self.fix_file_path:
             img_path = os.path.join(self.fix_file_path, img_path)
+
         img = Image.open(img_path)
+        if self.transforms:
+            img = self.transforms(img)
+
         img_id = self.annot[self.annot_image_key][idx][self.image_image_id]
         img_annots = [
             x for x in self.annot[self.annort_bbox_key] 
             if x[self.bbox_image_id] == img_id
         ]
+
         return img, img_annots
+
+    def _make_targets(self, img_annots):
+        return None
 
 
 HOME = os.environ['HOME']
@@ -82,5 +92,5 @@ dataset = Dataset(
 
 for im, a in dataset:
     im.show()
-    print(len(a))
+    a[0]
     break
