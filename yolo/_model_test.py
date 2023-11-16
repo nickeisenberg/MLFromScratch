@@ -1,3 +1,10 @@
+"""
+Some helpful links
+
+https://www.geeksforgeeks.org/yolov3-from-scratch-using-pytorch/
+https://medium.com/analytics-vidhya/object-detection-state-of-the-art-yolo-v3-79ad2937832
+"""
+
 import torch
 from model import *
 
