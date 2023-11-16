@@ -12,7 +12,10 @@ from model import *
 #--------------------------------------------------
 # The model produces the correct size output
 #--------------------------------------------------
-input = torch.randn(1, 1, 256 * 2, 256)
+input = torch.randn(1, 1, 256, 256)
+
+# flir shape
+input = torch.randn(1, 1, 512, 640)
 
 yoloV3 = YoloV3((1, _, _), 10)
 
