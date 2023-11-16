@@ -74,12 +74,12 @@ class Concatenater(nn.Module):
 class YoloV3(nn.Module):
     def __init__(self, image_size, num_classes):
         super().__init__()
-
-        self.img_w, self.img_h = image_size
+        
+        self.channels, self.img_w, self.img_h = image_size
         self.num_classes = num_classes
         
         self.block0 = nn.Sequential(
-            ConvBlock(3, 32, kernel_size=3, stride=1, padding=1),
+            ConvBlock(image_size[0], 32, kernel_size=3, stride=1, padding=1),
             ConvBlock(32, 64, kernel_size=3, stride=2, padding=1),
             ResBlock(64),
             ConvBlock(64, 128, kernel_size=3, stride=2, padding=1),

@@ -8,13 +8,14 @@ https://medium.com/analytics-vidhya/object-detection-state-of-the-art-yolo-v3-79
 import torch
 from model import *
 
-input = torch.randn(1, 3, 256, 256)
-input.shape
 
 #--------------------------------------------------
 # The model produces the correct size output
 #--------------------------------------------------
-yoloV3 = YoloV3((416, 416), 10)
+input = torch.randn(1, 1, 256 * 2, 256)
+
+yoloV3 = YoloV3((1, _, _), 10)
+
 for t in yoloV3(input):
     print(t.shape)
 #--------------------------------------------------
@@ -23,7 +24,7 @@ for t in yoloV3(input):
 # Below was the intially testing to ensure the model produced the correct
 # shape output
 #--------------------------------------------------
-c1 = ConvBlock(3, 32, kernel_size=3, stride=1, padding=1)(input)
+c1 = ConvBlock(input.shape[0], 32, kernel_size=3, stride=1, padding=1)(input)
 c2 = ConvBlock(32, 64, kernel_size=3, stride=2, padding=1)(c1)
 r1 = ResBlock(64)(c2)
 c1.shape
