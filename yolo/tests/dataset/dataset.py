@@ -4,13 +4,14 @@ import json
 from torchvision.transforms import v2
 import torch
 import matplotlib.pyplot as plt
-from utils import iou
+from utils import iou, AnchorAssign
 import numpy as np
 
 HOME = os.environ['HOME']
 FLIRROOT = os.path.join(
     HOME, 'Datasets', 'flir'
 )
+
 TRAINROOT = os.path.join(
     FLIRROOT, 'images_thermal_train'
 )
@@ -33,8 +34,16 @@ transform = v2.Compose([
     v2.ToDtype(torch.float32, scale=True)
 ])
 dataset = Dataset(
-    ANNOT_FILE_PATH, 'images', 'annotations', 'file_name', 'id', 'bbox', 
-    'image_id', 'category_id', transforms=transform, fix_file_path=TRAINROOT
+    annot_file_path=ANNOT_FILE_PATH, 
+    annot_image_key='images', 
+    annot_bbox_key='annotations', 
+    image_file_name='file_name', 
+    image_image_id='id', 
+    bbox_bbox='bbox', 
+    bbox_image_id='image_id', 
+    bbox_category_id='category_id', 
+    transforms=transform, 
+    fix_file_path=TRAINROOT
 )
 
 #--------------------------------------------------
@@ -53,6 +62,13 @@ anchors = [
 
 scales = [32, 16, 8]
 
+#--------------------------------------------------
+# This following for-loop assigns the anchors on a "first-come-first-serve"
+# basis. This means that if a latter attotation has a higher iou for a 
+# partcular anchor, scale and cell but this anchor_scale_cell was already 
+# assigned eariler in the for-loop then this higher iou score is NOT swapped
+# out and is assiged to the nxt highest iou score.
+#--------------------------------------------------
 all_ims_nr = {}
 look_here = []
 for img_id, (img, annotes) in enumerate(dataset):
@@ -82,118 +98,45 @@ for img_id, (img, annotes) in enumerate(dataset):
     all_ims_nr[img_id] = ank_tracker
     if img_id == 500:
         break
+#--------------------------------------------------
 
-class AnchorAssign:
-    def __init__(self, anchors, scales, annotes):
-        self.annotes = annotes
-        self.anchors = anchors
-        self.scales = scales
-        self.anchor_assignment = {}
-        self.ignore_keys = []
-
-    @staticmethod
-    def iou(box1, box2, share_center=False):
-        """
-        Parameters
-        ----------
-        box1: torch.Tensor
-            Iterable of format [bx, by, bw, bh] where bx and by are the coords of
-            the top left of the bounding box and bw and bh are the width and
-            height
-        box2: same as box1
-        pred: boolean default = False
-            If False, then the assumption is made that the boxes share the same
-            center.
-        """
-        ep = 1e-6
-    
-        if share_center:
-            box1_a = box1[2] * box1[3]
-            box2_a = box2[2] * box2[3]
-            intersection_a = min(box1[2], box2[2]) * min(box1[3], box2[3])
-            union_a = box1_a + box2_a - intersection_a
-            return intersection_a / union_a
-        
-        else:
-            len_x = torch.max(
-                torch.sub(
-                    torch.min(box1[0] + box1[2], box2[0] + box2[2]),
-                    torch.max(box1[0], box2[0])
-                ),
-                torch.Tensor([0])
-            )
-            len_y = torch.max(
-                torch.sub(
-                    torch.min(box1[1] + box1[3], box2[1] + box2[3]),
-                    torch.max(box1[1], box2[1])
-                ),
-                torch.Tensor([0])
-            )
-    
-            box1_a = box1[2] * box1[3]
-            box2_a = box2[2] * box2[3]
-    
-            intersection_a = len_x * len_y
-    
-            union_a = box1_a + box2_a - intersection_a + ep
-    
-            return intersection_a / union_a
-
-    def best_anchor_for_annote(self, annote, ignore_keys=[]):
-        bbox = annote['bbox']
-        best_iou = -1
-        best_key = "0_0_0_0"
-        for i, anchor in enumerate(self.anchors):
-            anchor_id = i % 3
-            anchor_scale = i // 3
-            which_cell_row = (bbox[1] + (bbox[3] // 2)) // self.scales[anchor_scale]
-            which_cell_col = (bbox[0] + (bbox[2] // 2)) // self.scales[anchor_scale]
-            key = f"{anchor_id}_{anchor_scale}_{which_cell_row}_{which_cell_col}"
-            if key in ignore_keys:
-                continue
-            _iou = self.iou(anchor, bbox, share_center=True)
-            if _iou > best_iou:
-                best_iou = _iou
-                best_key = key
-        if best_key not in self.anchor_assignment.keys():
-            self.anchor_assignment[best_key] = (annote, best_iou)
-            return None
-        else:
-            if best_iou > self.anchor_assignment[best_key][1]:
-                replaced_annote = self.anchor_assignment[best_key][0]
-                self.anchor_assignment[best_key] = (annote, best_iou) 
-                self.ignore_keys.append(best_key)
-                self.best_anchor_for_annote(replaced_annote, self.ignore_keys)
-            else:
-                self.ignore_keys.append(best_key)
-                self.best_anchor_for_annote(annote, self.ignore_keys)
-
-    def annote_loop(self):
-        for annote in self.annotes:
-            self.best_anchor_for_annote(annote)
-            self.ignore_keys = []
-
+#--------------------------------------------------
+# The AnchorAssign assign class uses recursion in order to replace
+# achoirs with higher scoring bounded boxes.
+#--------------------------------------------------
 all_ims = {}
 for img_id, (img, annotes) in enumerate(dataset):
     if (img_id + 1) % 250 == 0:
         print(np.round(100 * img_id / len(dataset), 3))
-    assign_anchors = AnchorAssign(anchors, scales, annotes)
-    assign_anchors.annote_loop()
-    anc_assign = assign_anchors.anchor_assignment
-    all_ims[img_id] = anc_assign
+    anchor_assign = AnchorAssign(anchors, scales, annotes)
+    anchor_assign.annote_loop()
+    assigned_anchors = anchor_assign.anchor_assignment
+    all_ims[img_id] = assigned_anchors
     if img_id == 500:
         break
+#--------------------------------------------------
 
-print(" ")
-i = look_here[2]
-for key0, key1 in zip(all_ims[i], all_ims_nr[i]):
-    print(all_ims[i][key0][0]['id'], all_ims_nr[i][key1][0]['id'])
-    if all_ims[i][key0][0]['id'] != all_ims_nr[i][key1][0]['id']:
-        print(all_ims[i][key0][1], all_ims_nr[i][key1][1])
+#--------------------------------------------------
+# We can parse the bouding boxes and see which anchor is assigned to it.
+#--------------------------------------------------
+for key, (annote, score) in all_ims[1].items():
+    id = key.split("_")
+    anchor_id = id[0]
+    scale_id = id[1]
+    cell_row = id[2]
+    cell_col = id[3]
+    which_anchor = f"anchor{anchor_id}_scale{scale_id}_row{cell_row}_col{cell_col}"
+    print(which_anchor, annote['id'], annote['bbox'])
+#--------------------------------------------------
 
-    print(key0, key1)
-
-
+#--------------------------------------------------
+# As we can see below, the for the first 500 images, if we use AnchorAssign,
+# then our total iou_score per image is greater than or equal to the 
+# first-come-fist-serve assigne 96% of the time.
+# The reason why the sum may be lower is that when you replace a bbox's anchor,
+# it may get reassiged with with anoter anchor and the resulting sum of this
+# swap is less than if you were to do first-come-first-serve.
+#--------------------------------------------------
 yes = 0
 for i in range(len(all_ims)):
     sum0 = 0
@@ -205,8 +148,18 @@ for i in range(len(all_ims)):
         sum1 += all_ims_nr[i][key1][1]
     if sum0 >= sum1:
         yes += 1
-yes / len(all_ims)
+    else:
+        print(i)
+print(yes / len(all_ims))
+#--------------------------------------------------
 
-
-
-
+#--------------------------------------------------
+# See below how 4541 replaced 4540 and 4540's new score was lower than
+# the original.
+#--------------------------------------------------
+i = 221
+for key0, key1 in zip(all_ims[i], all_ims_nr[i]):
+    print(all_ims[i][key0][0]['id'], all_ims_nr[i][key1][0]['id'])
+    if all_ims[i][key0][0]['id'] != all_ims_nr[i][key1][0]['id']:
+        print(all_ims[i][key0][1], all_ims_nr[i][key1][1])
+#-------------

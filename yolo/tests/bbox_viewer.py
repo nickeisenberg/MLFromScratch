@@ -7,12 +7,22 @@ DATAPATH = "/home/nicholas/Datasets/flir/images_thermal_train"
 with open(os.path.join(DATAPATH, 'coco.json'), 'r') as file:
     data = json.load(file)
 
-
+#--------------------------------------------------
+# Select an image to view the bounding boxes
+#--------------------------------------------------
 img_id = data['images'][90]['id']
+#--------------------------------------------------
 
+#--------------------------------------------------
+# Get the image path and subset the annotations only to this image
+#--------------------------------------------------
 img_path = os.path.join(DATAPATH, data['images'][img_id]['file_name'])
 img_annotes = [x for x in data['annotations'] if x['image_id'] == img_id]
+#--------------------------------------------------
 
+#--------------------------------------------------
+# Open the image with PIL and add the bounding boxes and show the image
+#--------------------------------------------------
 img = Image.open(img_path)
 
 if img.mode == 'L':
@@ -33,3 +43,4 @@ for img_a in img_annotes:
         )
 
 img.show()
+#--------------------------------------------------

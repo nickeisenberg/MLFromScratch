@@ -66,6 +66,3 @@ class Dataset(_Dataset):
         ]
 
         return img, img_annots
-
-    def _make_targets(self, img_annots):
-        return None
