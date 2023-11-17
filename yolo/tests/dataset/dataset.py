@@ -37,23 +37,6 @@ dataset = Dataset(
     'image_id', 'category_id', transforms=transform, fix_file_path=TRAINROOT
 )
 
-for i, (im, a) in enumerate(dataset):
-    im0 = im
-    im0_a = a
-    if i == 2:
-        print(len(im0_a))
-        print(im0_a)
-        break
-
-
-im0_a[0]['bbox']
-
-
-
-
-plt.imshow(im0[0])
-plt.show()
-
 #--------------------------------------------------
 # flir image size (512, 640)
 # flir output sizes
@@ -93,7 +76,8 @@ for img_id, (img, annotes) in enumerate(dataset):
                 score = _score
                 best_key = key 
             elif _score > score and key in ank_tracker:
-                look_here.append(img_id)
+                if _score > ank_tracker[key][1]:
+                    look_here.append(img_id)
         ank_tracker[best_key] = (annot, score)
     all_ims_nr[img_id] = ank_tracker
     if img_id == 500:
@@ -157,7 +141,7 @@ class AnchorAssign:
 
     def best_anchor_for_annote(self, annote, ignore_keys=[]):
         bbox = annote['bbox']
-        score = -1
+        best_iou = -1
         best_key = "0_0_0_0"
         for i, anchor in enumerate(self.anchors):
             anchor_id = i % 3
@@ -167,18 +151,22 @@ class AnchorAssign:
             key = f"{anchor_id}_{anchor_scale}_{which_cell_row}_{which_cell_col}"
             if key in ignore_keys:
                 continue
-            _score = self.iou(anchor, bbox, share_center=True)
-            if _score > score and key not in self.anchor_assignment:
-                score = _score
-                best_key = key 
-            elif _score > score and key in self.anchor_assignment:
-                score = _score
-                replaced_annote = self.anchor_assignment[key][0]
+            _iou = self.iou(anchor, bbox, share_center=True)
+            if _iou > best_iou:
+                best_iou = _iou
                 best_key = key
+        if best_key not in self.anchor_assignment.keys():
+            self.anchor_assignment[best_key] = (annote, best_iou)
+            return None
+        else:
+            if best_iou > self.anchor_assignment[best_key][1]:
+                replaced_annote = self.anchor_assignment[best_key][0]
+                self.anchor_assignment[best_key] = (annote, best_iou) 
                 self.ignore_keys.append(best_key)
                 self.best_anchor_for_annote(replaced_annote, self.ignore_keys)
-        self.anchor_assignment[best_key] = (annote, score)
-        return None
+            else:
+                self.ignore_keys.append(best_key)
+                self.best_anchor_for_annote(annote, self.ignore_keys)
 
     def annote_loop(self):
         for annote in self.annotes:
@@ -196,7 +184,15 @@ for img_id, (img, annotes) in enumerate(dataset):
     if img_id == 500:
         break
 
-look_here[3]
+print(" ")
+i = look_here[2]
+for key0, key1 in zip(all_ims[i], all_ims_nr[i]):
+    print(all_ims[i][key0][0]['id'], all_ims_nr[i][key1][0]['id'])
+    if all_ims[i][key0][0]['id'] != all_ims_nr[i][key1][0]['id']:
+        print(all_ims[i][key0][1], all_ims_nr[i][key1][1])
+
+    print(key0, key1)
+
 
 yes = 0
 for i in range(len(all_ims)):
@@ -207,7 +203,7 @@ for i in range(len(all_ims)):
         # print(key1, all_ims_nr[18][key1][0]['id'])
         sum0 += all_ims[i][key0][1]
         sum1 += all_ims_nr[i][key1][1]
-    if sum0 > sum1:
+    if sum0 >= sum1:
         yes += 1
 yes / len(all_ims)
 
