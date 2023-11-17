@@ -21,7 +21,19 @@ ANNOT_FILE_PATH = os.path.join(
 with open(ANNOT_FILE_PATH, 'r') as oj:
     annotations = json.load(oj)
 
-annotations['annotations'][0]
+#--------------------------------------------------
+# There are 80 categories
+#--------------------------------------------------
+print([x['id'] for x in annotations['categories']])
+#--------------------------------------------------
+
+#--------------------------------------------------
+# image_id starts at 0 while annotiation id starts at 1
+#--------------------------------------------------
+torch.Tensor(annotations['annotations'][0]['bbox'])
+torch.Tensor([annotations['annotations'][0]['category_id']])
+
+#--------------------------------------------------
 
 ANCHORS = [ 
     [(0.28, 0.22), (0.38, 0.48), (0.9, 0.78)], 
@@ -46,6 +58,10 @@ dataset = Dataset(
     fix_file_path=TRAINROOT
 )
 
+for im, ann in dataset:
+    print(len(ann))
+    break
+
 #--------------------------------------------------
 # flir image size (512, 640)
 # flir output sizes
@@ -55,6 +71,10 @@ dataset = Dataset(
 # torch.Size([1, 3, 64, 80, 15]) -- each cell represents (8 X 8)
 #--------------------------------------------------
 
+#--------------------------------------------------
+# It will help to put the anchors in the following shape to match the
+# shape of the bounding boxes
+#--------------------------------------------------
 anchors = [
     (0, 0, int(x[0] * 640), int(x[1] * 512)) 
     for X in ANCHORS for x in X
@@ -96,7 +116,7 @@ for img_id, (img, annotes) in enumerate(dataset):
                     look_here.append(img_id)
         ank_tracker[best_key] = (annot, score)
     all_ims_nr[img_id] = ank_tracker
-    if img_id == 500:
+    if img_id == 100:
         break
 #--------------------------------------------------
 
@@ -105,29 +125,37 @@ for img_id, (img, annotes) in enumerate(dataset):
 # achoirs with higher scoring bounded boxes.
 #--------------------------------------------------
 all_ims = {}
+all_ims_targets = {}
 for img_id, (img, annotes) in enumerate(dataset):
     if (img_id + 1) % 250 == 0:
         print(np.round(100 * img_id / len(dataset), 3))
     anchor_assign = AnchorAssign(anchors, scales, annotes)
-    anchor_assign.annote_loop()
-    assigned_anchors = anchor_assign.anchor_assignment
-    all_ims[img_id] = assigned_anchors
-    if img_id == 500:
+    anchor_assign.build_targets()
+    all_ims[img_id] = anchor_assign.anchor_assignment
+    all_ims_targets[img_id] = anchor_assign.target
+    if img_id == 0:
         break
 #--------------------------------------------------
 
 #--------------------------------------------------
 # We can parse the bouding boxes and see which anchor is assigned to it.
 #--------------------------------------------------
-for key, (annote, score) in all_ims[1].items():
+for key, (annote, score) in all_ims[0].items():
     id = key.split("_")
-    anchor_id = id[0]
-    scale_id = id[1]
+    scale_id = id[0]
+    anchor_id = id[1]
     cell_row = id[2]
     cell_col = id[3]
-    which_anchor = f"anchor{anchor_id}_scale{scale_id}_row{cell_row}_col{cell_col}"
-    print(which_anchor, annote['id'], annote['bbox'])
+    which_anchor = f"scale{scale_id}_anchor{anchor_id}_row{cell_row}_col{cell_col}"
+    print(which_anchor, annote['id'], annote['category_id'], annote['bbox'])
+
+all_ims_targets[0][2][0, 1, 17, 67]
+
+
+
+
 #--------------------------------------------------
+
 
 #--------------------------------------------------
 # As we can see below, the for the first 500 images, if we use AnchorAssign,

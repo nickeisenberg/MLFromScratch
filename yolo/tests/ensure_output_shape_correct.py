@@ -17,7 +17,7 @@ input = torch.randn(1, 1, 256, 256)
 # flir shape
 input = torch.randn(1, 1, 512, 640)
 
-yoloV3 = YoloV3((1, _, _), 10)
+yoloV3 = YoloV3((1, _, _), 80)
 
 for t in yoloV3(input):
     print(t.shape)
