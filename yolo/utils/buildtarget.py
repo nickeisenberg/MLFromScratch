@@ -1,7 +1,38 @@
 import torch
+import numpy as np
+import matplotlib.pyplot as plt
 from .iou import iou
+from sklearn.cluster import KMeans
 
-class AnchorAssign:
+class ConstructAnchors:
+    def __init__(self, annotations, img_width, img_height):
+        self.annotations = annotations
+        self.bboxes = np.array([
+            [x['bbox'][2] / img_width, x['bbox'][3] / img_height]  
+            for x in annotations
+        ])
+        self.k_means()
+
+    def k_means(self, n_clusters=9):
+        self.kmeans = KMeans(n_clusters=n_clusters)
+        self.clusters = self.kmeans.fit_predict(self.bboxes)
+        cluster_centers = self.kmeans.cluster_centers_
+        sorted_args = np.argsort(np.linalg.norm(cluster_centers, axis=1))
+        self.cluster_centers = np.hstack(
+            (sorted_args.reshape((-1, 1)), cluster_centers[sorted_args])
+        )
+        return None
+
+    def view_clusters(self, show=True):
+        fig = plt.figure()
+        plt.scatter(self.bboxes[:, 0], self.bboxes[:, 1], c=self.clusters)
+        if show:
+            plt.show()
+        else:
+            return fig
+
+
+class BuildTarget:
     def __init__(self, anchors, scales, annotes):
         self.annotes = annotes
         self.anchors = anchors
@@ -16,12 +47,7 @@ class AnchorAssign:
 
     def best_anchor_for_annote(self, annote, ignore_keys=[]):
         """
-        NOTICE
-        ------
-        This is a temporary method that is used to prototype the 
-        build target method.
-
-        given a flir annotation dictionary, this pair the dictionary with the
+        Given a flir annotation dictionary, this pair the dictionary with the
         anchor based on highest IOU score. When looping through all of the 
         annotations for a particular image, this function will replace an
         anchor assignment for a particular annotation if the new annotation has
@@ -75,14 +101,5 @@ class AnchorAssign:
                 torch.Tensor([1]), 
                 torch.Tensor([annote['category_id']])
             ])
-
-
-
-
-
-
-
-
-
 
 

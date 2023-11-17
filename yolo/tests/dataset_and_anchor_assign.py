@@ -4,7 +4,7 @@ import json
 from torchvision.transforms import v2
 import torch
 import matplotlib.pyplot as plt
-from utils import iou, AnchorAssign
+from utils import iou, BuildTarget
 import numpy as np
 
 HOME = os.environ['HOME']
@@ -121,7 +121,7 @@ for img_id, (img, annotes) in enumerate(dataset):
 #--------------------------------------------------
 
 #--------------------------------------------------
-# The AnchorAssign assign class uses recursion in order to replace
+# The BuildTarget assign class uses recursion in order to replace
 # achoirs with higher scoring bounded boxes.
 #--------------------------------------------------
 all_ims = {}
@@ -129,7 +129,7 @@ all_ims_targets = {}
 for img_id, (img, annotes) in enumerate(dataset):
     if (img_id + 1) % 250 == 0:
         print(np.round(100 * img_id / len(dataset), 3))
-    anchor_assign = AnchorAssign(anchors, scales, annotes)
+    anchor_assign = BuildTarget(anchors, scales, annotes)
     anchor_assign.build_targets()
     all_ims[img_id] = anchor_assign.anchor_assignment
     all_ims_targets[img_id] = anchor_assign.target
@@ -151,14 +151,11 @@ for key, (annote, score) in all_ims[0].items():
 
 all_ims_targets[0][2][0, 1, 17, 67]
 
-
-
-
 #--------------------------------------------------
 
 
 #--------------------------------------------------
-# As we can see below, the for the first 500 images, if we use AnchorAssign,
+# As we can see below, the for the first 500 images, if we use BuildTarget,
 # then our total iou_score per image is greater than or equal to the 
 # first-come-fist-serve assigne 96% of the time.
 # The reason why the sum may be lower is that when you replace a bbox's anchor,
