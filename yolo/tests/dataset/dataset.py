@@ -48,9 +48,8 @@ for i, (im, a) in enumerate(dataset):
 
 im0_a[0]['bbox']
 
-anchors = [(0, 0, int(x[0] * im0.shape[-1]), int(x[1] * im0.shape[-2])) for X in ANCHORS for x in X]
 
-im0.shape
+
 
 plt.imshow(im0[0])
 plt.show()
@@ -64,10 +63,15 @@ plt.show()
 # torch.Size([1, 3, 64, 80, 15]) -- each cell represents (8 X 8)
 #--------------------------------------------------
 
+anchors = [
+    (0, 0, int(x[0] * 640), int(x[1] * 512)) 
+    for X in ANCHORS for x in X
+]
+
 scales = [32, 16, 8]
 
-count = 0
-ignore_keys = []
+all_ims_nr = {}
+look_here = []
 for img_id, (img, annotes) in enumerate(dataset):
     if (img_id + 1) % 250 == 0:
         print(np.round(100 * img_id / len(dataset), 3))
@@ -89,9 +93,11 @@ for img_id, (img, annotes) in enumerate(dataset):
                 score = _score
                 best_key = key 
             elif _score > score and key in ank_tracker:
-                count += 1
-        ank_tracker[best_key] = (bbox_id, score)
-    break
+                look_here.append(img_id)
+        ank_tracker[best_key] = (annot, score)
+    all_ims_nr[img_id] = ank_tracker
+    if img_id == 500:
+        break
 
 class AnchorAssign:
     def __init__(self, anchors, scales, annotes):
@@ -179,16 +185,31 @@ class AnchorAssign:
             self.best_anchor_for_annote(annote)
             self.ignore_keys = []
 
-
+all_ims = {}
 for img_id, (img, annotes) in enumerate(dataset):
     if (img_id + 1) % 250 == 0:
         print(np.round(100 * img_id / len(dataset), 3))
     assign_anchors = AnchorAssign(anchors, scales, annotes)
     assign_anchors.annote_loop()
     anc_assign = assign_anchors.anchor_assignment
-    break
+    all_ims[img_id] = anc_assign
+    if img_id == 500:
+        break
 
+look_here[3]
 
+yes = 0
+for i in range(len(all_ims)):
+    sum0 = 0
+    sum1 = 0
+    for key0, key1 in zip(all_ims[i], all_ims_nr[i]):
+        # print(key0, all_ims[18][key0][0]['id'])
+        # print(key1, all_ims_nr[18][key1][0]['id'])
+        sum0 += all_ims[i][key0][1]
+        sum1 += all_ims_nr[i][key1][1]
+    if sum0 > sum1:
+        yes += 1
+yes / len(all_ims)
 
 
 
