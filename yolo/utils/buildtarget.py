@@ -46,7 +46,7 @@ class BuildTarget:
             torch.zeros((3, 64, 80, 6))
         )
 
-    def best_anchor_for_annote(
+    def _best_anchor_for_annote(
             self, annote, ignore_keys=[], by_center=False
         ):
         """
@@ -56,6 +56,10 @@ class BuildTarget:
         anchor assignment for a particular annotation if the new annotation has
         a higher IOU score, it will then reassign the previously assigned 
         annotation to a different anchor through a recursive processes.
+
+        The function will store the information in self.anchor_assignment in
+        the form self.anchor_assignment[(scale_id, anc_id, row, col)] = (annote, score)
+        where row and col are the row and col number within the grid of scale_id.
 
         Parameters
         ----------
@@ -103,15 +107,34 @@ class BuildTarget:
                 replaced_annote = self.anchor_assignment[best_key][0]
                 self.anchor_assignment[best_key] = (annote, best_iou) 
                 self.ignore_keys.append(best_key)
-                self.best_anchor_for_annote(replaced_annote, self.ignore_keys)
+                self._best_anchor_for_annote(replaced_annote, self.ignore_keys)
 
             else:
                 self.ignore_keys.append(best_key)
-                self.best_anchor_for_annote(annote, self.ignore_keys)
+                self._best_anchor_for_annote(annote, self.ignore_keys)
 
-    def build_targets(self, return_target=False, match_bbox_to_pred=True):
+    def build_targets(self, return_target=False, match_bbox_to_pred=False):
         """
-        loops through all annotations for an image and builds the targets.
+        Loops through all annotations for an image and builds the targets.
+        The result will be added to self.target.
+
+        Parameters
+        ----------
+        return_target: boolean, default=False
+            If True, then this method will return self.target.
+
+        match_bbox_to_pred: boolean, default=False
+            There is costomization in the way the loss function is defined.
+            If False, then this function will set the target to be
+            target[sc][anchor, row, col] = [bbox, 1, category_id]. However, it
+            is starard to transform the bbox entries to the following:
+                x, y = bbox[0] / self.scales[sc], bbox[1] / self.scales[sc]
+                x, y = x - int(x), y - int(y)
+                w, h = bbox[2] / self.scales[sc], bbox[3] / self.scales[sc]
+                bbox = [x, y, w, h]
+            If True, the this funtion will apply the above scaling.
+            
+
 
         match_bbox_to_pred will transform the bbox to match the model output. I
         may just set this as a permenant default. For now it is an option set
@@ -119,7 +142,7 @@ class BuildTarget:
 
         """
         for annote in self.annotes:
-            self.best_anchor_for_annote(annote)
+            self._best_anchor_for_annote(annote)
             self.ignore_keys = []
 
         for key, (annote, _) in self.anchor_assignment.items():
