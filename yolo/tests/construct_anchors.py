@@ -17,7 +17,6 @@ ANNOT_FILE_PATH = os.path.join(
 with open(ANNOT_FILE_PATH, 'r') as oj:
     annotations = json.load(oj)
 
-
 construct_anchors = ConstructAnchors(annotations['annotations'], 640, 512)
 
 construct_anchors.view_clusters()

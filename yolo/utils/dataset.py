@@ -27,7 +27,8 @@ class Dataset(_Dataset):
 
     def __init__(self, annot_file_path, annot_image_key, annot_bbox_key,
                  image_file_name, image_image_id, bbox_bbox, bbox_image_id,
-                 bbox_category_id, transforms=None, fix_file_path=None):
+                 bbox_category_id, transforms=None, target_transform=None, 
+                 fix_file_path=None):
 
         with open(annot_file_path, 'r') as oaf:
             self.annot = json.load(oaf)
@@ -44,6 +45,7 @@ class Dataset(_Dataset):
         
         # optionals
         self.transforms = transforms
+        self.target_transform = target_transform
         self.fix_file_path = fix_file_path
         #--------------------------------------------------
 
@@ -55,14 +57,17 @@ class Dataset(_Dataset):
         if self.fix_file_path:
             img_path = os.path.join(self.fix_file_path, img_path)
 
+        img_id = self.annot[self.annot_image_key][idx][self.image_image_id]
+
         img = Image.open(img_path)
         if self.transforms:
             img = self.transforms(img)
 
-        img_id = self.annot[self.annot_image_key][idx][self.image_image_id]
         img_annots = [
             x for x in self.annot[self.annort_bbox_key] 
             if x[self.bbox_image_id] == img_id
         ]
+        if self.target_transform:
+            img_annots = self.target_transform(img_annots)
 
         return img, img_annots

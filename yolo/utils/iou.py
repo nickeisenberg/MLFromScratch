@@ -17,9 +17,9 @@ def iou(box1, box2, share_center=False):
     ep = 1e-6
 
     if share_center:
-        box1_a = box1[2] * box1[3]
-        box2_a = box2[2] * box2[3]
-        intersection_a = min(box1[2], box2[2]) * min(box1[3], box2[3])
+        box1_a = box1[-2] * box1[-1]
+        box2_a = box2[-2] * box2[-1]
+        intersection_a = min(box1[-2], box2[-2]) * min(box1[-1], box2[-1])
         union_a = box1_a + box2_a - intersection_a
         return intersection_a / union_a
     

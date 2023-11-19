@@ -21,6 +21,8 @@ ANNOT_FILE_PATH = os.path.join(
 with open(ANNOT_FILE_PATH, 'r') as oj:
     annotations = json.load(oj)
 
+annotations['annotations'][0]['bbox'][2:]
+
 #--------------------------------------------------
 # There are 80 categories
 #--------------------------------------------------
@@ -74,13 +76,23 @@ for im, ann in dataset:
 #--------------------------------------------------
 # It will help to put the anchors in the following shape to match the
 # shape of the bounding boxes
+# Scale refers to the amount at which the original image was downsized by. In
+# other words, grid = img_size / scale
 #--------------------------------------------------
-anchors = [
-    (0, 0, int(x[0] * 640), int(x[1] * 512)) 
-    for X in ANCHORS for x in X
-]
 
-scales = [32, 16, 8]
+grid_cell_scales = [32, 16, 8]
+    
+grid_cell_scale = 32
+scaled_anchors = torch.Tensor([
+    (
+        x[0] * 640 / min(grid_cell_scale, 640) , 
+        x[1] * 512 / min(grid_cell_scale, 512)
+    ) 
+    for X in ANCHORS for x in X
+])
+print(scaled_anchors)
+
+print(scaled_anchors.reshape((3, 3, 2)))
 
 #--------------------------------------------------
 # This following for-loop assigns the anchors on a "first-come-first-serve"
@@ -101,7 +113,7 @@ for img_id, (img, annotes) in enumerate(dataset):
         bbox_id = annot['id']
         score = -1
         best_key = "0_0_0_0"
-        for i, ank in enumerate(anchors):
+        for i, ank in enumerate(scaled_anchors):
             ank_id = i % 3  # ank id
             ank_scale = i // 3  # which scale
             which_cell_row = (bbox[1] + (bbox[3] // 2)) // scales[ank_scale]
@@ -129,11 +141,11 @@ all_ims_targets = {}
 for img_id, (img, annotes) in enumerate(dataset):
     if (img_id + 1) % 250 == 0:
         print(np.round(100 * img_id / len(dataset), 3))
-    anchor_assign = BuildTarget(anchors, scales, annotes)
+    anchor_assign = BuildTarget(scaled_anchors, scales, annotes)
     anchor_assign.build_targets()
     all_ims[img_id] = anchor_assign.anchor_assignment
     all_ims_targets[img_id] = anchor_assign.target
-    if img_id == 0:
+    if img_id == 100:
         break
 #--------------------------------------------------
 
@@ -149,7 +161,7 @@ for key, (annote, score) in all_ims[0].items():
     which_anchor = f"scale{scale_id}_anchor{anchor_id}_row{cell_row}_col{cell_col}"
     print(which_anchor, annote['id'], annote['category_id'], annote['bbox'])
 
-all_ims_targets[0][2][0, 1, 17, 67]
+all_ims_targets[0][2][1, 14, 66]
 
 #--------------------------------------------------
 
