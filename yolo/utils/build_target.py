@@ -1,43 +1,27 @@
 import torch
-import numpy as np
-import matplotlib.pyplot as plt
 from .iou import iou
-from sklearn.cluster import KMeans
-
-class ConstructAnchors:
-    def __init__(self, annotations, img_width, img_height):
-        self.annotations = annotations
-        self.bboxes = np.array([
-            [x['bbox'][2] / img_width, x['bbox'][3] / img_height]  
-            for x in annotations
-        ])
-        self.k_means()
-
-    def k_means(self, n_clusters=9):
-        self.kmeans = KMeans(n_clusters=n_clusters)
-        self.clusters = self.kmeans.fit_predict(self.bboxes)
-        cluster_centers = self.kmeans.cluster_centers_
-        sorted_args = np.argsort(np.linalg.norm(cluster_centers, axis=1))[::-1]
-        self.cluster_centers = np.hstack(
-            (sorted_args.reshape((-1, 1)), cluster_centers[sorted_args])
-        )
-        return None
-
-    def view_clusters(self, show=True):
-        fig = plt.figure()
-        plt.scatter(self.bboxes[:, 0], self.bboxes[:, 1], c=self.clusters)
-        if show:
-            plt.show()
-        else:
-            return fig
-
 
 class BuildTarget:
-    def __init__(self, anchors, annotes, scales, img_size):
+    """
+    A class to build the target for a single image.
+
+    Parameters:
+    ----------
+    anchors: 1-D iterable
+        A list of anchors in decreasing order based on area. As of now it is 
+        assumed that there are 9 total anchors and 3 anchors per scale. The 
+        anchors are to be scaled to full size.
+
+    annotes: list
+        A list of annotations for the image. Each annotation must be a 
+        dictionary. There must must be a "bbox" key and a "category_id" id for
+        the annotation. The bbox is of the form [x, y, w, h].
+    """
+    
+    def __init__(self, anchors, annotes, scales):
         self.annotes = annotes
         self.anchors = anchors
         self.scales = scales
-        self.img_size = img_size
         self.anchor_assignment = {}
         self.ignore_keys = []
         self.target = (
@@ -133,12 +117,6 @@ class BuildTarget:
                 w, h = bbox[2] / self.scales[sc], bbox[3] / self.scales[sc]
                 bbox = [x, y, w, h]
             If True, the this funtion will apply the above scaling.
-            
-
-
-        match_bbox_to_pred will transform the bbox to match the model output. I
-        may just set this as a permenant default. For now it is an option set
-        to True.
 
         """
         for annote in self.annotes:
@@ -166,6 +144,3 @@ class BuildTarget:
 
         else:
             return None
-
-
-

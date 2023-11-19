@@ -1,3 +1,4 @@
 from .iou import iou
 from .dataset import Dataset
-from .buildtarget import BuildTarget, ConstructAnchors
+from .build_target import BuildTarget
+from .construct_anchors import ConstructAnchors

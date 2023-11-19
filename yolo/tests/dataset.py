@@ -21,20 +21,24 @@ ANCHORS = [
     [(0.02, 0.03), (0.04, 0.07), (0.08, 0.06)], 
 ]
 UNSCALED_ANCHORS = [
-    (0, 0, x[0] * 640 // 1, x[1] * 512 // 1) 
+    (0, 0, x[0] * 640, x[1] * 512) 
     for X in ANCHORS for x in X
 ]
 SCALES = [32, 16, 8]
 
+# Input transform
 transform = v2.Compose([
     v2.ToImage(),
     v2.ToDtype(torch.float32, scale=True)
 ])
+
+# target transform
 def target_transform(annotes):
     target =  BuildTarget(
-        UNSCALED_ANCHORS, SCALES, annotes
+        UNSCALED_ANCHORS, annotes, SCALES
     ).build_targets(return_target=True)
     return target
+
 dataset = Dataset(
     annot_file_path=ANNOT_FILE_PATH, 
     annot_image_key='images', 
@@ -49,16 +53,13 @@ dataset = Dataset(
     fix_file_path=TRAINROOT
 )
 
-
-for im, annotes in dataset:
-    annotes[2][1, 17, 67]
-    break
-
 dataloader = DataLoader(dataset, 32, shuffle=False)
 
 for batch in dataloader:
     batch[0].shape
     batch[1][0].shape
+    batch[1][1].shape
+    batch[1][2].shape
     break
 
 

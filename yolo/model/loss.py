@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from utils import iou
 
 class YoloV3Loss(nn.Module):
 
@@ -39,3 +40,30 @@ class YoloV3Loss(nn.Module):
             dim=-1
         ) 
 
+        ious = iou(box_preds[obj], target[..., 0:4][obj]).detach() 
+
+        object_loss = self.mse(
+            self.sigmoid(pred[..., 4:5][obj]), 
+            ious * target[..., 4:5][obj]
+        ) 
+       
+        # Predicted box coordinates 
+        pred[..., 0:2] = self.sigmoid(pred[..., 0:2])
+
+        # Target box coordinates 
+        target[..., 2:4] = torch.log(1e-6 + target[..., 2:4] / anchors) 
+        # Calculating box coordinate loss 
+        box_loss = self.mse(pred[..., 0:4][obj], 
+                            target[..., 0:4][obj]) 
+          
+        # Claculating class loss 
+        class_loss = self.cross_entropy((pred[..., 5:][obj]), 
+                                   target[..., 5][obj].long()) 
+
+        # Total loss 
+        return ( 
+            box_loss 
+            + object_loss 
+            + no_object_loss 
+            + class_loss 
+        )
