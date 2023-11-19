@@ -61,34 +61,37 @@ class YoloV3Loss(nn.Module):
             + class_loss 
         )
 
-
 # preds
 pred1 = torch.hstack((
     torch.randn(4),
     torch.Tensor([1]),
     torch.randn(80)
-))
+)).repeat((32, 3, 16, 20, 1))
 pred0 = torch.hstack((
     torch.randn(4) + 10,
     torch.Tensor([1]),
     torch.randn(80)
-))
+)).repeat((32, 3, 16, 20, 1))
 
 # targets
 target1 = torch.hstack((
     torch.randn(4),
     torch.Tensor([1]),
     torch.randint(0, 10, (1,))
-))
+)).repeat((32, 3, 16, 20, 1))
 target0 = torch.hstack((
     torch.randn(4) + 10,
     torch.Tensor([1]),
     torch.randint(0, 10, (1,))
-))
+)).repeat((32, 3, 16, 20, 1))
 
+pred1.shape
+pred0.shape
+target0.shape 
+target1.shape
 
+pred = torch.cat((pred0, pred1), dim=0)
+target = torch.cat((target0, target1), dim=0)
 
-
-
-
-
+pred.shape
+target.shape
