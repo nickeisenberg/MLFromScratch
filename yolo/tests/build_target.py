@@ -3,7 +3,6 @@ import os
 import json
 from torchvision.transforms import v2
 import torch
-import matplotlib.pyplot as plt
 from utils import iou, BuildTarget
 import numpy as np
 
