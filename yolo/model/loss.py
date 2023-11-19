@@ -3,7 +3,6 @@ import torch.nn as nn
 from utils import iou
 
 class YoloV3Loss(nn.Module):
-
     def __init__(self):
         super().__init__()
         self.mse = nn.MSELoss() 

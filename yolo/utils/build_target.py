@@ -124,7 +124,7 @@ class BuildTarget:
             self.ignore_keys = []
 
         for key, (annote, _) in self.anchor_assignment.items():
-            sc, anchor, row, col = [int(x) for x in key.split("_")]
+            sc, anchor_id, row, col = [int(x) for x in key.split("_")]
             bbox = annote['bbox']
 
             if match_bbox_to_pred:
@@ -133,7 +133,7 @@ class BuildTarget:
                 w, h = bbox[2] / self.scales[sc], bbox[3] / self.scales[sc]
                 bbox = [x, y, w, h]
 
-            self.target[sc][anchor, row, col] = torch.hstack([
+            self.target[sc][anchor_id, row, col] = torch.hstack([
                 torch.Tensor(bbox), 
                 torch.Tensor([1]), 
                 torch.Tensor([annote['category_id']])

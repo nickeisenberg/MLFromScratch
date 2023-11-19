@@ -80,3 +80,13 @@ _iou(b1, b2, True)
 iou(b1, b2, True)
 _iou(b1, b2, False)
 
+iou(
+    b1.repeat((1, 3, 16, 20, 1)),
+    b2.repeat((1, 3, 16, 20, 1))
+).shape
+
+
+b1.repeat((1, 3, 16, 20, 1)).shape
+
+
+
