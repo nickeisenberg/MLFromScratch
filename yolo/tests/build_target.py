@@ -4,7 +4,6 @@ import json
 from torchvision.transforms import v2
 import torch
 from utils import iou, BuildTarget
-import numpy as np
 
 HOME = os.environ['HOME']
 TRAINROOT = os.path.join(
