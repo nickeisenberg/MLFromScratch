@@ -3,7 +3,7 @@ build and debug the loss function
 """
 import torch
 import torch.nn as nn
-from model import YoloV3Loss, YoloV3Loss2
+from model import YoloV3Loss, YoloV3LossOld
 from utils import iou
 
 # preds
@@ -43,16 +43,17 @@ target = torch.cat(
 )
 torch.manual_seed(1)
 anchors = torch.randn((3, 2)) + 5
-anchors = anchors.reshape((1, 3, 1, 1, 2))
 
 print(pred.shape)
 print(target.shape)
 print(anchors.shape)
 
 loss_fn = YoloV3Loss()
-loss_fn2 = YoloV3Loss2()
+
+loss_fn2 = YoloV3LossOld()
 
 loss_fn(pred, target, anchors)
+
 loss_fn2(pred, target, anchors)
 
 loss_fn.history
