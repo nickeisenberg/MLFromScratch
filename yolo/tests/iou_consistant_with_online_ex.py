@@ -77,7 +77,7 @@ b2[..., 2]
 iou(b1, b2, False)
 _iou(b1, b2, True)
 
-iou(b1, b2, True)
+iou(b1[2:4], b2, True)
 _iou(b1, b2, False)
 
 iou(

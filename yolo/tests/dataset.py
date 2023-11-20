@@ -20,14 +20,14 @@ ANCHORS = [
     [(0.07, 0.15), (0.15, 0.11), (0.14, 0.29)], 
     [(0.02, 0.03), (0.04, 0.07), (0.08, 0.06)], 
 ]
-UNSCALED_ANCHORS = [
-    (0, 0, x[0] * 640, x[1] * 512) 
+UNSCALED_ANCHORS = torch.tensor([
+    [x[0] * 640, x[1] * 512]
     for X in ANCHORS for x in X
-]
+])
 SCALES = [32, 16, 8]
 
 # Input transform
-transform = v2.Compose([
+img_transform = v2.Compose([
     v2.ToImage(),
     v2.ToDtype(torch.float32, scale=True)
 ])
@@ -48,7 +48,7 @@ dataset = Dataset(
     bbox_bbox='bbox', 
     bbox_image_id='image_id', 
     bbox_category_id='category_id', 
-    transforms=transform,
+    img_transform=img_transform,
     target_transform=target_transform,
     fix_file_path=TRAINROOT
 )

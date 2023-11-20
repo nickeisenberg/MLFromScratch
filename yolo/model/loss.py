@@ -40,13 +40,13 @@ class YoloV3Loss(nn.Module):
 
         box_preds = torch.cat(
             [
-                self.sigmoid(pred[..., 0:2]), 
-                torch.exp(pred[..., 2:4]) * scaled_anchors 
+                self.sigmoid(pred[..., 0: 2]), 
+                torch.exp(pred[..., 2: 4]) * scaled_anchors 
             ],
             dim=-1
         ) 
 
-        ious = iou(box_preds[obj], target[..., 0:4][obj]).detach() 
+        ious = iou(box_preds[obj], target[..., 0: 4][obj]).detach() 
 
         object_loss = self.mse(
             self.sigmoid(pred[..., 4: 5][obj]), 
@@ -80,5 +80,4 @@ class YoloV3Loss(nn.Module):
         self.history["total_loss"].append(total_loss.item())
 
         return total_loss
-
 

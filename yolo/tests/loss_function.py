@@ -3,21 +3,24 @@ build and debug the loss function
 """
 import torch
 import torch.nn as nn
-from model import YoloV3Loss
+from model import YoloV3Loss, YoloV3Loss2
 from utils import iou
 
-
 # preds
+torch.manual_seed(1)
+x = torch.randn(4) + 4
+y = torch.randn(4) + 4
+
 pred = torch.cat(
     (
         torch.hstack((
-            torch.randn(4) + 4,
-            torch.Tensor([0]),
+            x,
+            torch.tensor([0]),
             torch.randn((80,))
         )).repeat((32, 3, 16, 20, 1)),
         torch.hstack((
-            torch.randn(4) + 4,
-            torch.Tensor([1]),
+            y,
+            torch.tensor([1]),
             torch.randn((80,))
         )).repeat((32, 3, 16, 20, 1))
     ), 
@@ -26,18 +29,19 @@ pred = torch.cat(
 target = torch.cat(
     (
         torch.hstack((
-            torch.randn(4) + 4,
-            torch.Tensor([0]),
+            x,
+            torch.tensor([0]),
             torch.randint(0, 10, (1,))
         )).repeat((32, 3, 16, 20, 1)),
         torch.hstack((
-            torch.randn(4) + 4,
-            torch.Tensor([1]),
+            y,
+            torch.tensor([1]),
             torch.randint(0, 10, (1,))
         )).repeat((32, 3, 16, 20, 1))
     ), 
     dim=0
 )
+torch.manual_seed(1)
 anchors = torch.randn((3, 2)) + 5
 anchors = anchors.reshape((1, 3, 1, 1, 2))
 
@@ -46,7 +50,14 @@ print(target.shape)
 print(anchors.shape)
 
 loss_fn = YoloV3Loss()
+loss_fn2 = YoloV3Loss2()
 
 loss_fn(pred, target, anchors)
+loss_fn2(pred, target, anchors)
 
 loss_fn.history
+
+
+
+
+

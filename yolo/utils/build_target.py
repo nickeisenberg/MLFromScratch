@@ -58,7 +58,7 @@ class BuildTarget:
             coordinates of the upper left corner of the bounding box.
         """
 
-        bbox = annote['bbox']
+        bbox = torch.tensor(annote['bbox'])
         best_iou = -1
         best_key = "0_0_0_0"
         for i, anchor in enumerate(self.anchors):
@@ -119,6 +119,7 @@ class BuildTarget:
             If True, the this funtion will apply the above scaling.
 
         """
+
         for annote in self.annotes:
             self._best_anchor_for_annote(annote)
             self.ignore_keys = []

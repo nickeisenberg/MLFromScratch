@@ -2,7 +2,6 @@
 I will work on this later.
 """
 
-
 import json
 import os
 from PIL import Image, ImageDraw
@@ -48,4 +47,6 @@ for img_a in img_annotes:
         )
 
 img.show()
+
+def
 #--------------------------------------------------

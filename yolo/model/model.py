@@ -63,9 +63,16 @@ class Concatenater(nn.Module):
     def __init__(self, in_channels):
         super().__init__()
         self.upsampler = nn.Sequential(
-            ConvBlock(in_channels, in_channels // 2, kernel_size=1, stride=1, padding=0),
+            ConvBlock(
+                in_channels, 
+                in_channels // 2, 
+                kernel_size=1, 
+                stride=1, 
+                padding=0
+            ),
             nn.Upsample(scale_factor=2)
         )
+
     def forward(self, x):
         up = self.upsampler(x[0])
         return torch.cat((up, x[1]), dim=1)
