@@ -24,7 +24,7 @@ anchors = torch.tensor([
 ]).reshape((-1, 2))
 anchors
 
-yoloV3 = YoloV3((1, 512, 640), anchors, [32, 16, 8], 80)
+yoloV3 = YoloV3((1, 512, 640), [32, 16, 8], 80)
 
 for t in yoloV3(input):
     print(t.shape)

@@ -1,9 +1,10 @@
 """
 build and debug the loss function
 """
+
 import torch
 import torch.nn as nn
-from model import YoloV3Loss, YoloV3LossOld
+from model import YoloV3Loss
 from utils import iou
 
 # preds
@@ -50,15 +51,6 @@ print(anchors.shape)
 
 loss_fn = YoloV3Loss()
 
-loss_fn2 = YoloV3LossOld()
-
 loss_fn(pred, target, anchors)
 
-loss_fn2(pred, target, anchors)
-
 loss_fn.history
-
-
-
-
-

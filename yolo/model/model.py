@@ -132,3 +132,5 @@ class YoloV3(nn.Module):
         pp2, p2 = self.pred2((pp1, scale2))
         _, p3 = self.pred3((pp2, scale3))
         return (p1, p2, p3)
+
+

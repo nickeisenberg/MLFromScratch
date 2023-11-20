@@ -36,6 +36,7 @@ anchors = torch.tensor([
     [(0.07, 0.15), (0.15, 0.11), (0.14, 0.29)], 
     [(0.02, 0.03), (0.04, 0.07), (0.08, 0.06)], 
 ]).reshape((-1, 2))
+anchors
 
 image = torch.tensor(0)
 annotes = []
@@ -66,8 +67,6 @@ decode_key(keys[0])
 
 buildtarget.target[2][1][14][66]
 
-buildtarget.target[0].shape
-
 decoded_annotes = {}
 scales = [32, 16, 8]
 thresh = .9
@@ -82,14 +81,8 @@ for i, scale_tensor in enumerate(buildtarget.target):
         h = int(scale * st[3])
         decoded_annotes[f"{i}_{a}_{b}_{c}"] = [x, y, w, h]
 
-
-for x in torch.where(buildtarget.target[2][..., 4:5] > .9):
-    x
-
-
-for key in keys:
-    print(key)
-
-
 for key in keys:
     print(dic[key][0]['bbox'] == decoded_annotes[key])
+
+
+
