@@ -15,7 +15,7 @@ from model import *
 input = torch.randn(1, 1, 256, 256)
 
 # flir shape
-input = torch.randn(1, 1, 512, 640)
+input = torch.randn((1, 1, 512, 640), requires_grad=True)
 
 anchors = torch.tensor([ 
     [(0.28, 0.22), (0.38, 0.48), (0.9, 0.78)], 

@@ -23,7 +23,7 @@ class BuildTarget:
         self.annotes = annotes
         self.anchors = anchors
         self.full_scale_anchors = scale_anchors(anchors, 1, img_w, img_h)
-        self.scales = scales
+        self.scales = scales 
         self.anchor_assignment = {}
         self.ignore_keys = []
         self.target = (

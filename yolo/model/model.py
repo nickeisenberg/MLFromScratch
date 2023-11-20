@@ -62,7 +62,7 @@ class ScalePredictionBlock(nn.Module):
         )
         pred[..., 0: 2] = self.sigmoid(pred[..., 0: 2])
         pred[..., 2: 4] = torch.exp(pred[..., 2: 4]) * self.anchors 
-        pred[..., 4:] = self.sigmoid(pred[..., 4:])
+        pred[..., 4:5] = self.sigmoid(pred[..., 4:5])
         return pre_pred, pred
 
 class Concatenater(nn.Module):
@@ -140,6 +140,3 @@ class YoloV3(nn.Module):
         pp2, p2 = self.pred2((pp1, scale2))
         _, p3 = self.pred3((pp2, scale3))
         return (p1, p2, p3)
-    
-
-
