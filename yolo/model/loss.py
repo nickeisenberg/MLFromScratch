@@ -97,6 +97,10 @@ class YoloV3LossOld(nn.Module):
             pred[..., :] = (x, y, w, h, prob, class_probabilities)
         target: torch.Tensor, shape=(batch, 3, num_rows, num_cols, 1, 6)
             target[..., :] = (x, y, w, h, prob, class_ID)
+
+        (x_off, y_off, w/ s, h /s, prop, ....) ---> (x, y, w, h, prob, class)
+
+        (t1, t2, t3) tk.shape = (batch, 3, row, col, ____)
         """
 
         obj = target[..., 4] == 1
@@ -111,7 +115,7 @@ class YoloV3LossOld(nn.Module):
         box_preds = torch.cat(
             [
                 self.sigmoid(pred[..., 0: 2]), 
-                torch.exp(pred[..., 2: 4]) * scaled_anchors 
+                torch.exp(pred[..., 2: 4]) * scaled_anchors
             ],
             dim=-1
         ) 
@@ -122,7 +126,7 @@ class YoloV3LossOld(nn.Module):
             self.sigmoid(pred[..., 4: 5][obj]), 
             ious * target[..., 4: 5][obj]
         ) 
-       
+
         # Predicted box coordinates 
         pred[..., 0: 2] = self.sigmoid(pred[..., 0: 2])
 
@@ -133,8 +137,8 @@ class YoloV3LossOld(nn.Module):
         box_loss = self.mse(
             pred[..., 0: 4][obj], 
             target[..., 0: 4][obj]
-        ) 
-          
+        )
+
         # Claculating class loss 
         class_loss = self.cross_entropy(
             pred[..., 5:][obj], 

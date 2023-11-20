@@ -61,7 +61,7 @@ class ScalePredictionBlock(nn.Module):
             x.shape[0], 3, x.shape[2], x.shape[3], self.num_classes + 5
         )
         pred[..., 0: 2] = self.sigmoid(pred[..., 0: 2])
-        pred[..., 2: 4] = torch.exp(pred[..., 2: 4]) * self.anchors 
+        # pred[..., 2: 4] = torch.exp(pred[..., 2: 4]) * self.anchors 
         pred[..., 4:5] = self.sigmoid(pred[..., 4:5])
         return pre_pred, pred
 

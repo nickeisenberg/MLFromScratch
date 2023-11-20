@@ -5,9 +5,8 @@ from torchvision.transforms import v2
 import torch
 from utils import iou, BuildTarget
 
-HOME = os.environ['HOME']
 TRAINROOT = os.path.join(
-    HOME, 'Datasets', 'flir', 'images_thermal_train'
+    os.environ['HOME'], 'Datasets', 'flir', 'images_thermal_train'
 )
 ANNOT_FILE_PATH = os.path.join(
     TRAINROOT , 'coco.json'
@@ -58,8 +57,39 @@ scales = [32, 16, 8]
 buildtarget = BuildTarget(anchors, annotes, scales, 640, 512)
 buildtarget.build_targets(match_bbox_to_pred=True)
 
-key = list(buildtarget.anchor_assignment.keys())[0]
-decode_key(key)
+dic = buildtarget.anchor_assignment
 
-buildtarget.anchor_assignment[key]
-buildtarget.target[1][1][13][3]
+keys = list(dic.keys())
+
+keys[0]
+decode_key(keys[0])
+
+buildtarget.target[2][1][14][66]
+
+buildtarget.target[0].shape
+
+decoded_annotes = {}
+scales = [32, 16, 8]
+thresh = .9
+for i, scale_tensor in enumerate(buildtarget.target):
+    scale = scales[i]
+    for a, b, c, _ in zip(*torch.where(scale_tensor[..., 4: 5] > thresh)):
+        torch.tensor([a, b, c])
+        st = scale_tensor[a][b][c][:4]
+        x = int(scale * (c + st[0]))
+        y = int(scale * (b + st[1]))
+        w = int(scale * st[2])
+        h = int(scale * st[3])
+        decoded_annotes[f"{i}_{a}_{b}_{c}"] = [x, y, w, h]
+
+
+for x in torch.where(buildtarget.target[2][..., 4:5] > .9):
+    x
+
+
+for key in keys:
+    print(key)
+
+
+for key in keys:
+    print(dic[key][0]['bbox'] == decoded_annotes[key])

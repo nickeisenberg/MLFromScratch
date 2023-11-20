@@ -5,9 +5,8 @@ from torchvision.transforms import v2
 import torch
 from torch.utils.data import DataLoader
 
-HOME = os.environ['HOME']
 TRAINROOT = os.path.join(
-    HOME, 'Datasets', 'flir', 'images_thermal_train'
+    os.environ['HOME'], 'Datasets', 'flir', 'images_thermal_train'
 )
 ANNOT_FILE_PATH = os.path.join(
     TRAINROOT , 'coco.json'
@@ -15,16 +14,12 @@ ANNOT_FILE_PATH = os.path.join(
 with open(ANNOT_FILE_PATH, 'r') as oj:
     annotations = json.load(oj)
 
-ANCHORS = [ 
+anchors = torch.tensor([ 
     [(0.28, 0.22), (0.38, 0.48), (0.9, 0.78)], 
     [(0.07, 0.15), (0.15, 0.11), (0.14, 0.29)], 
     [(0.02, 0.03), (0.04, 0.07), (0.08, 0.06)], 
-]
-UNSCALED_ANCHORS = torch.tensor([
-    [x[0] * 640, x[1] * 512]
-    for X in ANCHORS for x in X
-])
-SCALES = [32, 16, 8]
+]).reshape((-1, 2))
+anchors
 
 # Input transform
 img_transform = v2.Compose([
@@ -33,9 +28,10 @@ img_transform = v2.Compose([
 ])
 
 # target transform
-def target_transform(annotes):
+scales = [32, 16, 8]
+def target_transform(annotes, anchors=anchors, scales=scales):
     target =  BuildTarget(
-        UNSCALED_ANCHORS, annotes, SCALES
+        anchors, annotes, scales, 640, 512
     ).build_targets(return_target=True)
     return target
 
@@ -61,13 +57,3 @@ for batch in dataloader:
     batch[1][1].shape
     batch[1][2].shape
     break
-
-
-
-
-
-
-
-
-
-
