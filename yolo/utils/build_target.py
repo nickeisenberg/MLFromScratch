@@ -1,5 +1,6 @@
 import torch
 from .iou import iou
+from .scale_anchors import scale_anchors
 
 class BuildTarget:
     """
@@ -18,9 +19,10 @@ class BuildTarget:
         the annotation. The bbox is of the form [x, y, w, h].
     """
     
-    def __init__(self, anchors, annotes, scales):
+    def __init__(self, anchors, annotes, scales, img_w, img_h):
         self.annotes = annotes
         self.anchors = anchors
+        self.full_scale_anchors = scale_anchors(anchors, 1, img_w, img_h)
         self.scales = scales
         self.anchor_assignment = {}
         self.ignore_keys = []
@@ -61,7 +63,7 @@ class BuildTarget:
         bbox = torch.tensor(annote['bbox'])
         best_iou = -1
         best_key = "0_0_0_0"
-        for i, anchor in enumerate(self.anchors):
+        for i, anchor in enumerate(self.full_scale_anchors):
             anchor_scale = i // 3
             anchor_id = i % 3
 

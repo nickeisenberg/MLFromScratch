@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from utils import scale_anchors
 
 class ConvBlock(nn.Module): 
 	def __init__(self, in_channels, out_channels, **kwargs): 
@@ -38,7 +39,7 @@ class ResBlock(nn.Module):
             return x
 
 class ScalePredictionBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, num_classes):
+    def __init__(self, in_channels, out_channels, anchors, num_classes):
         super().__init__()
         self.pre_pred = nn.Sequential(
             ConvBlock(in_channels, out_channels // 2, kernel_size=1, stride=1, padding=0), 
@@ -49,7 +50,9 @@ class ScalePredictionBlock(nn.Module):
             ConvBlock(out_channels // 2, out_channels, kernel_size=3, stride=1, padding=1), 
             nn.Conv2d(out_channels, (num_classes + 5) * 3, kernel_size=1)
         )
-        self.num_classes = num_classes 
+        self.anchors = anchors.reshape((1, 3, 1, 1, 2))
+        self.num_classes = num_classes
+        self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
         pre_pred = self.pre_pred(x)
@@ -57,6 +60,9 @@ class ScalePredictionBlock(nn.Module):
         pred = pred.view(
             x.shape[0], 3, x.shape[2], x.shape[3], self.num_classes + 5
         )
+        pred[..., 0: 2] = self.sigmoid(pred[..., 0: 2])
+        pred[..., 2: 4] = torch.exp(pred[..., 2: 4]) * self.anchors 
+        pred[..., 4:] = self.sigmoid(pred[..., 4:])
         return pre_pred, pred
 
 class Concatenater(nn.Module):
@@ -78,10 +84,14 @@ class Concatenater(nn.Module):
         return torch.cat((up, x[1]), dim=1)
 
 class YoloV3(nn.Module):
-    def __init__(self, image_size, num_classes):
+    def __init__(self, image_size, anchors, scales, num_classes):
         super().__init__()
         
         self.channels, self.img_w, self.img_h = image_size
+        self.scales = scales
+        self.anchors1 = scale_anchors(anchors[: 3], scales[0], self.img_w, self.img_h)
+        self.anchors2 = scale_anchors(anchors[3: 6], scales[1], self.img_w, self.img_h)
+        self.anchors3 = scale_anchors(anchors[6:], scales[2], self.img_w, self.img_h)
         self.num_classes = num_classes
         
         self.block0 = nn.Sequential(
@@ -107,16 +117,18 @@ class YoloV3(nn.Module):
             ResBlock(1024, num_repeats=4)
         )
         
-        self.pred1 = ScalePredictionBlock(1024, 1024, self.num_classes)
+        self.pred1 = ScalePredictionBlock(
+            1024, 1024, self.anchors1, self.num_classes
+        )
         
         self.pred2 = nn.Sequential(
             Concatenater(512),
-            ScalePredictionBlock(768, 512, self.num_classes)
+            ScalePredictionBlock(768, 512, self.anchors2, self.num_classes)
         )
         
         self.pred3 = nn.Sequential(
             Concatenater(256),
-            ScalePredictionBlock(384, 256, self.num_classes)
+            ScalePredictionBlock(384, 256, self.anchors3, self.num_classes)
         )
 
     def forward(self, x):
@@ -128,3 +140,6 @@ class YoloV3(nn.Module):
         pp2, p2 = self.pred2((pp1, scale2))
         _, p3 = self.pred3((pp2, scale3))
         return (p1, p2, p3)
+    
+
+
