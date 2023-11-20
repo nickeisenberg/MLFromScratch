@@ -9,6 +9,13 @@ class YoloV3Loss(nn.Module):
         self.bce = nn.BCEWithLogitsLoss() 
         self.cross_entropy = nn.CrossEntropyLoss() 
         self.sigmoid = nn.Sigmoid() 
+        self.history = {
+            "box_loss": [],
+            "object_loss": [],
+            "no_object_loss": [],
+            "class_loss": [],
+            "total_loss": []
+        }
 
     def forward(self, pred, target, scaled_anchors):
         """
@@ -41,28 +48,37 @@ class YoloV3Loss(nn.Module):
 
         ious = iou(box_preds[obj], target[..., 0:4][obj]).detach() 
 
-        object_loss = self.bce(
-            self.sigmoid(pred[..., 4:5][obj]), 
-            ious * target[..., 4:5][obj]
+        object_loss = self.mse(
+            self.sigmoid(pred[..., 4: 5][obj]), 
+            ious * target[..., 4: 5][obj]
         ) 
        
         # Predicted box coordinates 
-        pred[..., 0:2] = self.sigmoid(pred[..., 0:2])
+        pred[..., 0: 2] = self.sigmoid(pred[..., 0: 2])
 
         # Target box coordinates 
-        target[..., 2:4] = torch.log(1e-6 + target[..., 2:4] / scaled_anchors) 
+        target[..., 2: 4] = torch.log(1e-6 + target[..., 2: 4] / scaled_anchors) 
+
         # Calculating box coordinate loss 
-        box_loss = self.mse(pred[..., 0:4][obj], 
-                            target[..., 0:4][obj]) 
+        box_loss = self.mse(
+            pred[..., 0: 4][obj], 
+            target[..., 0: 4][obj]
+        ) 
           
         # Claculating class loss 
-        class_loss = self.cross_entropy((pred[..., 5:][obj]), 
-                                        target[..., 5][obj].long()) 
+        class_loss = self.cross_entropy(
+            pred[..., 5:][obj], 
+            target[..., 5][obj].long()
+        ) 
 
-        # Total loss 
-        return ( 
-            box_loss 
-            + object_loss 
-            + no_object_loss 
-            + class_loss 
-        )
+        total_loss = box_loss + object_loss + no_object_loss + class_loss 
+        
+        self.history["box_loss"].append(box_loss.item())
+        self.history["object_loss"].append(object_loss.item())
+        self.history["no_object_loss"].append(no_object_loss.item())
+        self.history["class_loss"].append(class_loss.item())
+        self.history["total_loss"].append(total_loss.item())
+
+        return total_loss
+
+
