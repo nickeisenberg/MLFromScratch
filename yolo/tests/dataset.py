@@ -2,7 +2,7 @@ from utils import Dataset, BuildTarget
 import os
 import json
 from torchvision.transforms import v2
-import torch
+import numpy as np
 from torch.utils.data import DataLoader
 
 TRAINROOT = os.path.join(
@@ -29,6 +29,7 @@ img_transform = v2.Compose([
 
 # target transform
 scales = [32, 16, 8]
+
 def target_transform(annotes, anchors=anchors, scales=scales):
     target =  BuildTarget(
         anchors, annotes, scales, 640, 512

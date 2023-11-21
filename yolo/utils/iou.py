@@ -24,26 +24,21 @@ def iou(box1, box2, share_center=False):
         return intersection_a / union_a
     
     else:
-        len_x = torch.max(
-            torch.sub(
-                torch.min(
-                    box1[..., 0: 1] + box1[..., 2: 3], 
-                    box2[..., 0: 1] + box2[..., 2: 3]
-                ),
-                torch.max(box1[..., 0: 1], box2[..., 0: 1])
+        len_x = torch.sub(
+            torch.min(
+                box1[..., 0: 1] + box1[..., 2: 3], 
+                box2[..., 0: 1] + box2[..., 2: 3]
             ),
-            torch.Tensor([[0]])
-        )
-        len_y = torch.max(
-            torch.sub(
-                torch.min(
-                    box1[..., 1: 2] + box1[..., 3: 4], 
-                    box2[..., 1: 2] + box2[..., 3: 4]
-                ),
-                torch.max(box1[..., 1: 2], box2[..., 1: 2])
+            torch.max(box1[..., 0: 1], box2[..., 0: 1])
+        ).clamp(0)
+
+        len_y = torch.sub(
+            torch.min(
+                box1[..., 1: 2] + box1[..., 3: 4], 
+                box2[..., 1: 2] + box2[..., 3: 4]
             ),
-            torch.Tensor([[0]])
-        )
+            torch.max(box1[..., 1: 2], box2[..., 1: 2])
+        ).clamp(0)
 
         box1_a = box1[..., 2: 3] * box1[..., 3: 4]
         box2_a = box2[..., 2: 3] * box2[..., 3: 4]
