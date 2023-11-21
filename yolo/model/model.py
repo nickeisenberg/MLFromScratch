@@ -1,136 +1,143 @@
 import torch
 import torch.nn as nn
+from torch.utils.data import DataLoader, Dataset
+from torch.optim import Optimizer
+import numpy as np
+from model.loss import YoloV3Loss
+from utils import scale_anchors
 
-class ConvBlock(nn.Module): 
-	def __init__(self, in_channels, out_channels, **kwargs): 
-		super().__init__()
-		self.conv = nn.Conv2d(in_channels, out_channels, **kwargs) 
-		self.bn = nn.BatchNorm2d(out_channels) 
-		self.activation = nn.LeakyReLU(0.1) 
-
-	def forward(self, x): 
-		x = self.conv(x) 
-		x = self.bn(x) 
-		return self.activation(x) 
-
-class ResBlock(nn.Module):
-    def __init__(self, channels, use_residual=True, num_repeats=1):
-        super().__init__()
-        self.use_residual = use_residual
-        self.num_repeats = num_repeats
-
-        self._layers = []
-        for _ in range(num_repeats):
-            self._layers.append(
-                nn.Sequential(
-                    ConvBlock(channels, channels // 2, kernel_size=1),
-                    ConvBlock(channels // 2, channels, kernel_size=3, padding=1)
-                )
-            )
-        self.layers = nn.ModuleList(self._layers)
-
-    def forward(self, x):
-        for layer in self.layers:
-            residual = x
-            x = layer(x)
-            if self.use_residual:
-                x += residual
-            return x
-
-class ScalePredictionBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, num_classes):
-        super().__init__()
-        self.pre_pred = nn.Sequential(
-            ConvBlock(in_channels, out_channels // 2, kernel_size=1, stride=1, padding=0), 
-            ConvBlock(out_channels // 2, out_channels, kernel_size=3, stride=1, padding=1), 
-            ConvBlock(out_channels, out_channels // 2, kernel_size=1, stride=1, padding=0), 
-        )
-        self.pred = nn.Sequential(
-            ConvBlock(out_channels // 2, out_channels, kernel_size=3, stride=1, padding=1), 
-            nn.Conv2d(out_channels, (num_classes + 5) * 3, kernel_size=1)
-        )
-        self.num_classes = num_classes
-        self.sigmoid = nn.Sigmoid()
-
-    def forward(self, x):
-        pre_pred = self.pre_pred(x)
-        pred = self.pred(pre_pred)
-        pred = pred.view(
-            x.shape[0], 3, x.shape[2], x.shape[3], self.num_classes + 5
-        )
-        return pre_pred, pred
-
-class Concatenater(nn.Module):
-    def __init__(self, in_channels):
-        super().__init__()
-        self.upsampler = nn.Sequential(
-            ConvBlock(
-                in_channels, 
-                in_channels // 2, 
-                kernel_size=1, 
-                stride=1, 
-                padding=0
-            ),
-            nn.Upsample(scale_factor=2)
-        )
-
-    def forward(self, x):
-        up = self.upsampler(x[0])
-        return torch.cat((up, x[1]), dim=1)
-
-class YoloV3(nn.Module):
-    def __init__(self, image_size, scales, num_classes):
-        super().__init__()
-        
-        self.channels, self.img_w, self.img_h = image_size
+class Model:
+    def __init__(
+        self, 
+        model: nn.Module, 
+        loss_fn: YoloV3Loss, 
+        optimizer: Optimizer, 
+        t_dataset: Dataset,
+        v_dataset: Dataset,
+        batch_size: int,
+        device: str,
+        scales: list,
+        anchors: torch.Tensor,
+        img_width: int,
+        img_height: int
+        ):
+        self.model = model
+        self.loss_fn = loss_fn
+        self.optimizer = optimizer
+        self.t_dataset = t_dataset
+        self.t_dataloader = DataLoader(t_dataset, batch_size, shuffle=True)
+        self.v_dataset = v_dataset
+        self.v_dataloader = DataLoader(v_dataset, batch_size, shuffle=False)
+        self.device = device
+        self.history = {
+            "box_loss": [],
+            "object_loss": [],
+            "no_object_loss": [],
+            "class_loss": [],
+            "total_loss": [],
+        }
+        self.val_history = {
+            "box_loss": [],
+            "object_loss": [],
+            "no_object_loss": [],
+            "class_loss": [],
+            "total_loss": [],
+        }
         self.scales = scales
-        self.num_classes = num_classes
-        
-        self.block0 = nn.Sequential(
-            ConvBlock(image_size[0], 32, kernel_size=3, stride=1, padding=1),
-            ConvBlock(32, 64, kernel_size=3, stride=2, padding=1),
-            ResBlock(64),
-            ConvBlock(64, 128, kernel_size=3, stride=2, padding=1),
-            ResBlock(128, num_repeats=2)
-        )
-        
-        self.scale3 = nn.Sequential(
-            ConvBlock(128, 256, kernel_size=3, stride=2, padding=1),
-            ResBlock(256, num_repeats=8)
-        )
-        
-        self.scale2 = nn.Sequential(
-            ConvBlock(256, 512, kernel_size=3, stride=2, padding=1),
-            ResBlock(512, num_repeats=8)
-        )
-       
-        self.scale1 = nn.Sequential(
-            ConvBlock(512, 1024, kernel_size=3, stride=2, padding=1),
-            ResBlock(1024, num_repeats=4)
-        )
-        
-        self.pred1 = ScalePredictionBlock(
-            1024, 1024, self.num_classes
-        )
-        
-        self.pred2 = nn.Sequential(
-            Concatenater(512),
-            ScalePredictionBlock(768, 512, self.num_classes)
-        )
-        
-        self.pred3 = nn.Sequential(
-            Concatenater(256),
-            ScalePredictionBlock(384, 256, self.num_classes)
-        )
+        self.anchors = anchors
+        self.img_width = img_width
+        self.img_height = img_height
 
-    def forward(self, x):
-        x = self.block0(x)
-        scale3 = self.scale3(x)
-        scale2 = self.scale2(scale3)
-        scale1 = self.scale1(scale2)
-        pp1, p1 = self.pred1(scale1)
-        pp2, p2 = self.pred2((pp1, scale2))
-        _, p3 = self.pred3((pp2, scale3))
-        return (p1, p2, p3)
+    def train_one_epoch(self, epoch):
+
+        epoch_history = {
+            "box_loss": 0.,
+            "object_loss": 0.,
+            "no_object_loss": 0.,
+            "class_loss": 0.,
+            "total_loss": 0.
+        }
+
+        for batch_num, (images, targets) in enumerate(self.t_dataloader):
+
+            if batch_num + 1 % 100 == 0:
+                batch_loss = np.round(epoch_history['total_loss'], 3)
+                batch_loss = batch_loss // (batch_num + 1)
+                print(f"BATCH {batch_num} LOSS {batch_loss}")
+
+            self.optimizer.zero_grad()
+
+            predicitons = self.model(images)
+            
+            batch_loss = torch.zeros(1)
+            for scale_id, (preds, targs) in enumerate(zip(predicitons, targets)):
+                _batch_loss, batch_history = self.loss_fn(
+                    preds, 
+                    targs, 
+                    scale_anchors(
+                        self.anchors[scale_id: scale_id + 3], 
+                        self.scales[scale_id],
+                        self.img_width, self.img_height
+                    )
+                )
+                batch_loss += _batch_loss
+
+                for key in epoch_history.keys():
+                    epoch_history[key] += batch_history[key]
+
+            batch_loss.backward()
+
+            self.optimizer.step()
+
+        for key in self.history.keys():
+            self.history[key].append(epoch_history[key] / len(self.t_dataset))
+
+        print(f"EPOCH {epoch} AVG LOSS {np.round(epoch_history['total_loss'], 3)}")
+
+        return None
 
 
+    def validate_one_epoch(self, epoch):
+        
+        val_epoch_history = {
+            "box_loss": 0.,
+            "object_loss": 0.,
+            "no_object_loss": 0.,
+            "class_loss": 0.,
+            "total_loss": 0.
+        }
+        for images, targets in self.v_dataloader:
+
+            with torch.no_grad():
+                predicitons = self.model(images)
+                for scale_id, (preds, targs) in enumerate(zip(predicitons, targets)):
+                    _, val_history = self.loss_fn(
+                        preds, 
+                        targs, 
+                        scale_anchors(
+                            self.anchors[scale_id: scale_id + 3], 
+                            self.scales[scale_id],
+                            self.img_width, self.img_height
+                        )
+                    )
+                    for key in val_epoch_history.keys():
+                        val_epoch_history[key] += val_history[key]
+
+        for key in val_epoch_history.keys():
+            self.val_history[key].append(val_epoch_history[key] / len(self.v_dataset))
+
+        print(f"EPOCH {epoch} AVG VAL LOSS {np.round(val_epoch_history['total_loss'], 3)}")
+
+        return None
+
+    def fit(self, num_epochs):
+
+        for i in range(1, num_epochs + 1):
+
+            self.model.train()
+            self.train_one_epoch(epoch=i)
+
+            self.model.eval()
+            self.validate_one_epoch(epoch=i)
+
+        return None
