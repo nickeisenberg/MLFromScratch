@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from utils import iou
+from typing import Tuple
 
 class YoloV3Loss(nn.Module):
     def __init__(self):
@@ -9,22 +10,8 @@ class YoloV3Loss(nn.Module):
         self.bce = nn.BCEWithLogitsLoss() 
         self.cross_entropy = nn.CrossEntropyLoss() 
         self.sigmoid = nn.Sigmoid() 
-        self.t_history = {
-            "box_loss": [],
-            "object_loss": [],
-            "no_object_loss": [],
-            "class_loss": [],
-            "total_loss": []
-        }
-        self.v_history = {
-            "box_loss": [],
-            "object_loss": [],
-            "no_object_loss": [],
-            "class_loss": [],
-            "total_loss": []
-        }
 
-    def forward(self, pred, target, scaled_anchors, validate=False) -> torch.Tensor:
+    def forward(self, pred, target, scaled_anchors) -> Tuple[torch.Tensor, dict]:
         """
         This was the original loss from geeksforgeeks. This will not work anymore
         as I have edited the yolo model to account for some of the operations 
@@ -88,17 +75,11 @@ class YoloV3Loss(nn.Module):
 
         total_loss = box_loss + object_loss + no_object_loss + class_loss 
         
-        if validate:
-            self.v_history["box_loss"].append(box_loss.item())
-            self.v_history["object_loss"].append(object_loss.item())
-            self.v_history["no_object_loss"].append(no_object_loss.item())
-            self.v_history["class_loss"].append(class_loss.item())
-            self.v_history["total_loss"].append(total_loss.item())
-        else:
-            self.t_history["box_loss"].append(box_loss.item())
-            self.t_history["object_loss"].append(object_loss.item())
-            self.t_history["no_object_loss"].append(no_object_loss.item())
-            self.t_history["class_loss"].append(class_loss.item())
-            self.t_history["total_loss"].append(total_loss.item())
+        history = {}
+        history["box_loss"] = box_loss.item()
+        history["object_loss"] = object_loss.item()
+        history["no_object_loss"] = no_object_loss.item()
+        history["class_loss"] = class_loss.item()
+        history["total_loss"] = total_loss.item()
 
-        return total_loss
+        return total_loss, history
