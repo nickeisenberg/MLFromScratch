@@ -9,7 +9,14 @@ class YoloV3Loss(nn.Module):
         self.bce = nn.BCEWithLogitsLoss() 
         self.cross_entropy = nn.CrossEntropyLoss() 
         self.sigmoid = nn.Sigmoid() 
-        self.history = {
+        self.t_history = {
+            "box_loss": [],
+            "object_loss": [],
+            "no_object_loss": [],
+            "class_loss": [],
+            "total_loss": []
+        }
+        self.v_history = {
             "box_loss": [],
             "object_loss": [],
             "no_object_loss": [],
@@ -17,7 +24,7 @@ class YoloV3Loss(nn.Module):
             "total_loss": []
         }
 
-    def forward(self, pred, target, scaled_anchors):
+    def forward(self, pred, target, scaled_anchors, validate=False) -> torch.Tensor:
         """
         This was the original loss from geeksforgeeks. This will not work anymore
         as I have edited the yolo model to account for some of the operations 
@@ -81,10 +88,17 @@ class YoloV3Loss(nn.Module):
 
         total_loss = box_loss + object_loss + no_object_loss + class_loss 
         
-        self.history["box_loss"].append(box_loss.item())
-        self.history["object_loss"].append(object_loss.item())
-        self.history["no_object_loss"].append(no_object_loss.item())
-        self.history["class_loss"].append(class_loss.item())
-        self.history["total_loss"].append(total_loss.item())
+        if validate:
+            self.v_history["box_loss"].append(box_loss.item())
+            self.v_history["object_loss"].append(object_loss.item())
+            self.v_history["no_object_loss"].append(no_object_loss.item())
+            self.v_history["class_loss"].append(class_loss.item())
+            self.v_history["total_loss"].append(total_loss.item())
+        else:
+            self.t_history["box_loss"].append(box_loss.item())
+            self.t_history["object_loss"].append(object_loss.item())
+            self.t_history["no_object_loss"].append(no_object_loss.item())
+            self.t_history["class_loss"].append(class_loss.item())
+            self.t_history["total_loss"].append(total_loss.item())
 
         return total_loss
