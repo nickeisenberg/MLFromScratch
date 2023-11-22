@@ -79,15 +79,15 @@ class Concatenater(nn.Module):
         return torch.cat((up, x[1]), dim=1)
 
 class YoloV3(nn.Module):
-    def __init__(self, image_size, scales, num_classes):
+    def __init__(self, img_channels, scales, num_classes):
         super().__init__()
         
-        self.channels, self.img_w, self.img_h = image_size
+        self.img_channels = img_channels
         self.scales = scales
         self.num_classes = num_classes
         
         self.block0 = nn.Sequential(
-            ConvBlock(image_size[0], 32, kernel_size=3, stride=1, padding=1),
+            ConvBlock(self.img_channels, 32, kernel_size=3, stride=1, padding=1),
             ConvBlock(32, 64, kernel_size=3, stride=2, padding=1),
             ResBlock(64),
             ConvBlock(64, 128, kernel_size=3, stride=2, padding=1),

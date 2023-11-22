@@ -3,9 +3,9 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 from torch.optim import Optimizer
 import numpy as np
+from torch.utils.data.dataset import random_split
 from model.loss import YoloV3Loss
 from utils import scale_anchors
-
 
 class Model:
     def __init__(
@@ -13,22 +13,19 @@ class Model:
         model: nn.Module, 
         loss_fn: YoloV3Loss, 
         optimizer: Optimizer, 
-        t_dataset: Dataset,
-        v_dataset: Dataset,
+        dataset: Dataset,
+        train_val_split: tuple,
         batch_size: int,
         device: str,
         scales: torch.Tensor,
         anchors: torch.Tensor,
-        img_width: int,
-        img_height: int
         ):
         self.model = model
         self.loss_fn = loss_fn
         self.optimizer = optimizer
-        self.t_dataset = t_dataset
-        self.t_dataloader = DataLoader(t_dataset, batch_size, shuffle=True)
-        self.v_dataset = v_dataset
-        self.v_dataloader = DataLoader(v_dataset, batch_size, shuffle=False)
+        self.t_dataset, self.v_dataset = random_split(dataset, train_val_split)
+        self.t_dataloader = DataLoader(self.t_dataset, batch_size, shuffle=True)
+        self.v_dataloader = DataLoader(self.v_dataset, batch_size, shuffle=False)
         self.device = device
         self.history = {
             "box_loss": [],
@@ -46,8 +43,7 @@ class Model:
         }
         self.scales = scales.to(device)
         self.anchors = anchors.to(device)
-        self.img_width = img_width
-        self.img_height = img_height
+        _, self.img_height, self.img_width = dataset.__getitem__(1)[0].shape
 
     def train_one_epoch(self, epoch):
         epoch_history = {
@@ -74,15 +70,18 @@ class Model:
             
             batch_loss = torch.zeros(1).to(self.device)
             for scale_id, (preds, targs) in enumerate(zip(predicitons, targets)):
+                
+                scaled_anchors = scale_anchors(
+                    self.anchors[scale_id: scale_id + 3], 
+                    self.scales[scale_id],
+                    self.img_width, self.img_height,
+                    device=self.device
+                )
+
                 _batch_loss, batch_history = self.loss_fn(
                     preds, 
-                    targs, 
-                    scale_anchors(
-                        self.anchors[scale_id: scale_id + 3], 
-                        self.scales[scale_id],
-                        self.img_width, self.img_height,
-                        device=self.device
-                    )
+                    targs,
+                    scaled_anchors
                 )
                 batch_loss += _batch_loss
 
@@ -116,16 +115,20 @@ class Model:
             with torch.no_grad():
                 predicitons = self.model(images)
                 for scale_id, (preds, targs) in enumerate(zip(predicitons, targets)):
+
+                    scaled_anchors = scale_anchors(
+                        self.anchors[scale_id: scale_id + 3], 
+                        self.scales[scale_id],
+                        self.img_width, self.img_height,
+                        device=self.device
+                    )
+
                     _, val_history = self.loss_fn(
                         preds, 
                         targs, 
-                        scale_anchors(
-                            self.anchors[scale_id: scale_id + 3], 
-                            self.scales[scale_id],
-                            self.img_width, self.img_height,
-                            device=self.device
-                        )
+                        scaled_anchors
                     )
+
                     for key in val_epoch_history.keys():
                         val_epoch_history[key] += val_history[key]
 

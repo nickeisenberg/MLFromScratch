@@ -5,12 +5,13 @@ from torch.utils.data.dataset import random_split
 from torchvision.transforms import v2
 from model import Model, YoloV3, YoloV3Loss
 from utils import Dataset, BuildTarget
+from tests.train_model.settings import *
 
 #------------------------------------------------------------------------------
 # Model settings
 #------------------------------------------------------------------------------
 device = "cuda" if torch.cuda.is_available() else "cpu"
-device
+print(device)
 
 TRAINROOT = os.path.join(
     os.environ['HOME'], 'Datasets', 'flir', 'images_thermal_train'
@@ -54,6 +55,7 @@ dataset = Dataset(
     fix_file_path=TRAINROOT
 )
 
+
 t_dataset, v_dataset, _ = random_split(dataset, [.02, .02, .96])
 
 yoloV3 = YoloV3(image_size, scales, num_classes).to(device)
@@ -62,8 +64,8 @@ optimizer = Adam(yoloV3.parameters(), lr=1e-5)
 #------------------------------------------------------------------------------
 
 yoloV3model = Model(
-    yoloV3, loss_fn, optimizer, t_dataset, v_dataset, 4, 
-    device, scales, anchors, image_size[2], image_size[1]
+    yoloV3, loss_fn, optimizer, dataset, (.8, .2), 
+    4, device, scales, anchors
 )
 
 yoloV3model.fit(1)
