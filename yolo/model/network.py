@@ -19,6 +19,7 @@ class Model:
         device: str,
         scales: torch.Tensor,
         anchors: torch.Tensor,
+        notify_after: int
         ):
         self.model = model
         self.loss_fn = loss_fn
@@ -28,11 +29,11 @@ class Model:
         self.v_dataloader = DataLoader(self.v_dataset, batch_size, shuffle=False)
         self.device = device
         self.history = {
-            "box_loss": [],
-            "object_loss": [],
-            "no_object_loss": [],
-            "class_loss": [],
-            "total_loss": [],
+            "box_loss": {},
+            "object_loss": {},
+            "no_object_loss": {},
+            "class_loss": {},
+            "total_loss": {},
         }
         self.val_history = {
             "box_loss": [],
@@ -43,25 +44,22 @@ class Model:
         }
         self.scales = scales.to(device)
         self.anchors = anchors.to(device)
+        self.notify_after = notify_after
         _, self.img_height, self.img_width = dataset.__getitem__(1)[0].shape
 
     def train_one_epoch(self, epoch):
-        epoch_history = {
-            "box_loss": 0.,
-            "object_loss": 0.,
-            "no_object_loss": 0.,
-            "class_loss": 0.,
-            "total_loss": 0.
-        }
+
+        for key in self.history.keys():
+            self.history[key][epoch] = []
 
         for batch_num, (images, targets) in enumerate(self.t_dataloader):
 
             images = images.to(self.device)
             targets = [target.to(self.device) for target in targets]
 
-            if batch_num + 1 % 5 == 0:
-                batch_loss = np.round(epoch_history['total_loss'], 3)
-                batch_loss = batch_loss // (batch_num + 1)
+            if (batch_num + 1) % self.notify_after == 0:
+
+                batch_loss = np.round(np.mean(self.history['total_loss'][epoch]), 3)
                 print(f"BATCH {batch_num} LOSS {batch_loss}")
 
             self.optimizer.zero_grad()
@@ -83,19 +81,17 @@ class Model:
                     targs,
                     scaled_anchors
                 )
+
                 batch_loss += _batch_loss
 
-                for key in epoch_history.keys():
-                    epoch_history[key] += batch_history[key]
+                for key in self.history.keys():
+                    self.history[key][epoch].append(batch_history[key])
 
             batch_loss.backward()
 
             self.optimizer.step()
 
-        for key in self.history.keys():
-            self.history[key].append(epoch_history[key] / len(self.t_dataset))
-
-        print(f"EPOCH {epoch} AVG LOSS {np.round(epoch_history['total_loss'], 3)}")
+        print(f"EPOCH {epoch} AVG LOSS {np.round(self.history['total_loss'][epoch], 3)}")
 
         return None
 
