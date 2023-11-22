@@ -29,4 +29,3 @@ class ConstructAnchors:
             plt.show()
         else:
             return fig
-

@@ -5,21 +5,35 @@ from torchvision.transforms import v2
 import torch
 from utils import iou, BuildTarget
 
-TRAINROOT = os.path.join(
+#--------------------------------------------------
+# Some setting that need to be set
+#--------------------------------------------------
+trainroot = os.path.join(
     os.environ['HOME'], 'Datasets', 'flir', 'images_thermal_train'
 )
-ANNOT_FILE_PATH = os.path.join(
-    TRAINROOT , 'coco.json'
+annote_file_path = os.path.join(
+    trainroot , 'coco.json'
 )
-with open(ANNOT_FILE_PATH, 'r') as oj:
+with open(annote_file_path, 'r') as oj:
     annotations = json.load(oj)
 
+scales = [32, 16, 8]
+
+anchors = torch.tensor([ 
+    [(0.28, 0.22), (0.38, 0.48), (0.9, 0.78)], 
+    [(0.07, 0.15), (0.15, 0.11), (0.14, 0.29)], 
+    [(0.02, 0.03), (0.04, 0.07), (0.08, 0.06)], 
+]).reshape((-1, 2))
+
+#--------------------------------------------------
+# create the dataset and get an image and its annotations for testing
+#--------------------------------------------------
 img_transform = v2.Compose([
     v2.ToImage(),
     v2.ToDtype(torch.float32, scale=True)
 ])
 dataset = Dataset(
-    annot_file_path=ANNOT_FILE_PATH, 
+    annot_file_path=annote_file_path, 
     annot_image_key='images', 
     annot_bbox_key='annotations', 
     image_file_name='file_name', 
@@ -28,61 +42,59 @@ dataset = Dataset(
     bbox_image_id='image_id', 
     bbox_category_id='category_id', 
     img_transform=img_transform, 
-    fix_file_path=TRAINROOT
+    fix_file_path=trainroot
 )
 
-anchors = torch.tensor([ 
-    [(0.28, 0.22), (0.38, 0.48), (0.9, 0.78)], 
-    [(0.07, 0.15), (0.15, 0.11), (0.14, 0.29)], 
-    [(0.02, 0.03), (0.04, 0.07), (0.08, 0.06)], 
-]).reshape((-1, 2))
-anchors
+image, annotes = dataset.__getitem__(0)
+#--------------------------------------------------
 
-image = torch.tensor(0)
-annotes = []
-for _image, _annotes in dataset:
-    image = _image
-    annotes = _annotes
-    break
+#--------------------------------------------------
+# Human readable
+#--------------------------------------------------
+buildtarget = BuildTarget(anchors, annotes, scales, image.shape[-1], image.shape[-2])
+buildtarget.build_targets()
+anc_assign = buildtarget.anchor_assignment
+target = buildtarget.target
 
-def decode_key(key):
-    id = key.split("_")
-    scale_id = id[0]
-    anchor_id = id[1]
-    cell_row = id[2]
-    cell_col = id[3]
-    which_anchor = f"scale{scale_id}_anchor{anchor_id}_row{cell_row}_col{cell_col}"
-    print(which_anchor)
+#--------------------------------------------------
+# Model Ouput
+#--------------------------------------------------
+buildtarget_m = BuildTarget(anchors, annotes, scales, image.shape[-1], image.shape[-2])
+buildtarget_m.build_targets(match_bbox_to_pred=True)
+anc_assign_m = buildtarget_m.anchor_assignment
+target_m = buildtarget_m.target
 
-scales = [32, 16, 8]
-buildtarget = BuildTarget(anchors, annotes, scales, 640, 512)
-buildtarget.build_targets(match_bbox_to_pred=True)
+#--------------------------------------------------
+# See if the keys match
+#--------------------------------------------------
+for scale, scale_ten, scale_ten_m in zip(scales, target, target_m):
+    tup = torch.where(scale_ten[..., 4] == 1)
+    tup_m = torch.where(scale_ten_m[..., 4] == 1)
+    try:
+        for x, y in zip(tup, tup_m):
+            print(x == y)
+    except:
+        print("fail")
+        print(tup)
+        print(tup_m)
 
-dic = buildtarget.anchor_assignment
-
-keys = list(dic.keys())
-
-keys[0]
-decode_key(keys[0])
-
-buildtarget.target[2][1][14][66]
-
-decoded_annotes = {}
-scales = [32, 16, 8]
-thresh = .9
-for i, scale_tensor in enumerate(buildtarget.target):
-    scale = scales[i]
-    for a, b, c, _ in zip(*torch.where(scale_tensor[..., 4: 5] > thresh)):
-        torch.tensor([a, b, c])
-        st = scale_tensor[a][b][c][:4]
-        x = int(scale * (c + st[0]))
-        y = int(scale * (b + st[1]))
-        w = int(scale * st[2])
-        h = int(scale * st[3])
-        decoded_annotes[f"{i}_{a}_{b}_{c}"] = [x, y, w, h]
-
-for key in keys:
-    print(dic[key][0]['bbox'] == decoded_annotes[key])
-
-
-
+#--------------------------------------------------
+# reconstruct human readable and see if it matches
+#--------------------------------------------------
+for scale, scale_ten, scale_ten_m in zip(scales, target, target_m):
+    tup = torch.where(scale_ten[..., 4] == 1)
+    tup_m = torch.where(scale_ten_m[..., 4] == 1)
+    for (anc_id, row, col), (anc_id_m, row_m, col_m) in zip(zip(*tup), zip(*tup_m)):
+        bbox = scale_ten[anc_id][row][col]
+        bbox_m = scale_ten_m[anc_id_m][row_m][col_m]
+        x_recon = (col_m + bbox_m[0]) * scale
+        y_recon = (row_m + bbox_m[1]) * scale
+        w_recon = bbox_m[2] * scale
+        h_recon = bbox_m[3] * scale
+        bbox_recon = torch.hstack(
+            (
+                torch.tensor([x_recon, y_recon, w_recon, h_recon]),
+                bbox_m[4:]
+            )
+        )
+        print(bbox_recon == bbox)
