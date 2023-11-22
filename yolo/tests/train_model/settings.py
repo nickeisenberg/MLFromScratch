@@ -1,7 +1,6 @@
 #------------------------------------------------------------------------------
 # Model settings. These variable will be impoted into the model file
 #------------------------------------------------------------------------------
-
 import os
 import torch
 from torch.optim import Adam
@@ -29,7 +28,6 @@ num_classes = 80
 # Set the device
 #------------------------------------------------------------------------------
 device = "cuda" if torch.cuda.is_available() else "cpu"
-
 
 #------------------------------------------------------------------------------
 # Define the anchors
@@ -75,6 +73,8 @@ dataset = Dataset(
 )
 
 dataset, _, _ = random_split(dataset, [.04, .02, .94])
+
+train_val_split = (.8, .2)
 
 #------------------------------------------------------------------------------
 # Instantiate the model, set the loss and set the optimizer
