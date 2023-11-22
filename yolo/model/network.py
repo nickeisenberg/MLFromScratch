@@ -13,8 +13,8 @@ class Model:
         model: nn.Module, 
         loss_fn: YoloV3Loss, 
         optimizer: Optimizer, 
-        dataset: Dataset,
-        train_val_split: tuple,
+        t_dataset: Dataset,
+        v_dataset: Dataset,
         batch_size: int,
         device: str,
         scales: torch.Tensor,
@@ -24,8 +24,9 @@ class Model:
         self.model = model
         self.loss_fn = loss_fn
         self.optimizer = optimizer
-        self.t_dataset, self.v_dataset = random_split(dataset, train_val_split)
-        self.t_dataloader = DataLoader(self.t_dataset, batch_size, shuffle=True)
+        self.t_dataset = t_dataset
+        self.v_dataset = v_dataset
+        self.t_dataloader = DataLoader(self.t_dataset, batch_size, shuffle=False)
         self.v_dataloader = DataLoader(self.v_dataset, batch_size, shuffle=False)
         self.device = device
         self.history = {
@@ -45,7 +46,7 @@ class Model:
         self.scales = scales.to(device)
         self.anchors = anchors.to(device)
         self.notify_after = notify_after
-        _, self.img_height, self.img_width = dataset.__getitem__(1)[0].shape
+        _, self.img_height, self.img_width = t_dataset.__getitem__(0)[0].shape
 
     def train_one_epoch(self, epoch):
 
@@ -91,7 +92,7 @@ class Model:
 
             self.optimizer.step()
 
-        print(f"EPOCH {epoch} AVG LOSS {np.round(self.history['total_loss'][epoch], 3)}")
+        print(f"EPOCH {epoch} AVG LOSS {np.round(np.mean(self.history['total_loss'][epoch]), 3)}")
 
         return None
 

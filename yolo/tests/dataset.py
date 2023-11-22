@@ -52,9 +52,11 @@ dataset = Dataset(
 
 dataloader = DataLoader(dataset, 32, shuffle=False)
 
-for batch in dataloader:
+for i, batch in enumerate(dataloader):
+    print(i)
     batch[0].shape
     batch[1][0].shape
     batch[1][1].shape
     batch[1][2].shape
-    break
+    if i == 2:
+        break

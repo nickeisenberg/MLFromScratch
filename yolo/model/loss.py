@@ -4,12 +4,13 @@ from utils import iou
 from typing import Tuple
 
 class YoloV3Loss(nn.Module):
-    def __init__(self):
+    def __init__(self, device):
         super().__init__()
         self.mse = nn.MSELoss() 
         self.bce = nn.BCEWithLogitsLoss() 
         self.cross_entropy = nn.CrossEntropyLoss() 
         self.sigmoid = nn.Sigmoid() 
+        self.device = device
 
     def forward(self, pred, target, scaled_anchors) -> Tuple[torch.Tensor, dict]:
         """
@@ -34,44 +35,46 @@ class YoloV3Loss(nn.Module):
         obj = target[..., 4] == 1
         no_obj = target[..., 4] == 0
 
+        scaled_anchors = scaled_anchors.reshape((1, 3, 1, 1, 2))
+
         no_object_loss = self.bce( 
             (pred[..., 4:5][no_obj]), (target[..., 4:5][no_obj]), 
         )
 
-        scaled_anchors = scaled_anchors.reshape((1, 3, 1, 1, 2))
+        if obj.sum() > 0:
+            pred[..., 0: 2] = self.sigmoid(pred[..., 0: 2])
+            target[..., 2: 4] = torch.log(1e-6 + target[..., 2: 4] / scaled_anchors) 
 
-        box_preds = torch.cat(
-            [
-                self.sigmoid(pred[..., 0: 2]), 
-                torch.exp(pred[..., 2: 4]) * scaled_anchors
-            ],
-            dim=-1
-        ) 
+            box_preds = torch.cat(
+                [
+                    pred[..., 0: 2], 
+                    torch.exp(pred[..., 2: 4]) * scaled_anchors
+                ],
+                dim=-1
+            ) 
 
-        ious = iou(box_preds[obj], target[..., 0: 4][obj]).detach() 
+            ious = iou(box_preds[obj], target[..., 0: 4][obj]).detach() 
+            
+            object_loss = self.mse(
+                self.sigmoid(pred[..., 4: 5][obj]), 
+                ious * target[..., 4: 5][obj]
+            ) 
 
-        object_loss = self.mse(
-            self.sigmoid(pred[..., 4: 5][obj]), 
-            ious * target[..., 4: 5][obj]
-        ) 
+            # Calculating box coordinate loss 
+            box_loss = self.mse(
+                pred[..., 0: 4][obj], 
+                target[..., 0: 4][obj]
+            )
 
-        # Predicted box coordinates 
-        pred[..., 0: 2] = self.sigmoid(pred[..., 0: 2])
-
-        # Target box coordinates 
-        target[..., 2: 4] = torch.log(1e-6 + target[..., 2: 4] / scaled_anchors) 
-
-        # Calculating box coordinate loss 
-        box_loss = self.mse(
-            pred[..., 0: 4][obj], 
-            target[..., 0: 4][obj]
-        )
-
-        # Claculating class loss 
-        class_loss = self.cross_entropy(
-            pred[..., 5:][obj], 
-            target[..., 5][obj].long()
-        ) 
+            # Claculating class loss 
+            class_loss = self.cross_entropy(
+                pred[..., 5:][obj], 
+                target[..., 5][obj].long()
+            )
+        else:
+            box_loss = torch.tensor([0]).to(self.device)
+            object_loss = torch.tensor([0]).to(self.device)
+            class_loss = torch.tensor([0]).to(self.device)
 
         total_loss = box_loss + object_loss + no_object_loss + class_loss 
         
