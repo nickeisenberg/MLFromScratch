@@ -6,6 +6,7 @@ yoloV3model = Model(
     yoloV3, loss_fn, optimizer, t_dataset, v_dataset,
     batch_size, device, scales, anchors, notify_after
 )
+
 yoloV3model.device
 
 yoloV3model.fit(1)
