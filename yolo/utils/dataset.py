@@ -25,13 +25,17 @@ class Dataset(_Dataset):
     
     """
 
-    def __init__(self, annot_file_path, annot_image_key, annot_bbox_key,
+    def __init__(self, annot_json, annot_image_key, annot_bbox_key,
                  image_file_name, image_image_id, bbox_bbox, bbox_image_id,
                  bbox_category_id, img_transform=None, target_transform=None, 
                  fix_file_path=None):
 
-        with open(annot_file_path, 'r') as oaf:
-            self.annot = json.load(oaf)
+
+        if isinstance(annot_json, str): 
+            with open(annot_json, 'r') as oaf:
+                self.annot = json.load(oaf)
+        elif isinstance(annot_json, dict):
+            self.annot = annot_json
         
         # The annot file keys
         self.annot_image_key = annot_image_key

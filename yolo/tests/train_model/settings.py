@@ -5,10 +5,10 @@ import os
 import json
 import torch
 from torch.optim import Adam
-from torch.utils.data.dataset import random_split, Subset
+from torch.utils.data.dataset import Subset
 from torchvision.transforms import v2
-from model import Model, YoloV3, YoloV3Loss
-from utils import Dataset, BuildTarget, ConstructAnchors
+from model import YoloV3, YoloV3Loss
+from utils import Dataset, BuildTarget, category_mapper
 
 
 #------------------------------------------------------------------------------
@@ -24,10 +24,9 @@ annote_file_path = os.path.join(
 with open(annote_file_path, 'r') as oj:
     annotations = json.load(oj)
 
-#------------------------------------------------------------------------------
-# Number of classes
-#------------------------------------------------------------------------------
-num_classes = 80
+cat_map = category_mapper(annotations)
+
+num_classes = len(cat_map)
 
 #------------------------------------------------------------------------------
 # Set the device
@@ -37,13 +36,6 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 #------------------------------------------------------------------------------
 # Define the anchors
 #------------------------------------------------------------------------------
-
-# anchors = torch.tensor([ 
-#     [(0.28, 0.22), (0.38, 0.48), (0.9, 0.78)], 
-#     [(0.07, 0.15), (0.15, 0.11), (0.14, 0.29)], 
-#     [(0.02, 0.03), (0.04, 0.07), (0.08, 0.06)], 
-# ]).reshape((-1, 2))
-# anchors
 
 anchors = torch.tensor([
     [0.38109066, 0.53757016],
@@ -73,12 +65,12 @@ img_transform = v2.Compose([
 
 def target_transform(annotes, anchors=anchors, scales=scales):
     target =  BuildTarget(
-        anchors, annotes, scales, image_size[-1], image_size[-2]
-    ).build_targets(return_target=True, is_model_pred=True)
+        cat_map, anchors, annotes, scales, image_size[-1], image_size[-2]
+    ).build_target(return_target=True, is_model_pred=True)
     return target
 
 dataset = Dataset(
-    annot_file_path=annote_file_path, 
+    annot_json=annotations,
     annot_image_key='images', 
     annot_bbox_key='annotations', 
     image_file_name='file_name', 

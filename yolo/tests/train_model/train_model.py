@@ -1,4 +1,5 @@
 from tests.train_model.settings import *
+from model import Model
 import matplotlib.pyplot as plt
 import numpy as np
 

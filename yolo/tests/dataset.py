@@ -4,6 +4,7 @@ import json
 from torchvision.transforms import v2
 import numpy as np
 from torch.utils.data import DataLoader
+import torch
 
 TRAINROOT = os.path.join(
     os.environ['HOME'], 'Datasets', 'flir', 'images_thermal_train'
@@ -30,14 +31,16 @@ img_transform = v2.Compose([
 # target transform
 scales = [32, 16, 8]
 
+
+
 def target_transform(annotes, anchors=anchors, scales=scales):
     target =  BuildTarget(
         anchors, annotes, scales, 640, 512
-    ).build_targets(return_target=True)
+    ).build_target(return_target=True)
     return target
 
 dataset = Dataset(
-    annot_file_path=ANNOT_FILE_PATH, 
+    annot_json=ANNOT_FILE_PATH, 
     annot_image_key='images', 
     annot_bbox_key='annotations', 
     image_file_name='file_name', 
@@ -49,6 +52,31 @@ dataset = Dataset(
     target_transform=target_transform,
     fix_file_path=TRAINROOT
 )
+
+dataset2 = Dataset(
+    annot_json=annotations,
+    annot_image_key='images', 
+    annot_bbox_key='annotations', 
+    image_file_name='file_name', 
+    image_image_id='id', 
+    bbox_bbox='bbox', 
+    bbox_image_id='image_id', 
+    bbox_category_id='category_id', 
+    img_transform=img_transform,
+    target_transform=target_transform,
+    fix_file_path=TRAINROOT
+)
+
+for k, (tup, tup2) in enumerate(zip(dataset, dataset2)):
+    if k % 100 == 0:
+        print(k)
+    im = (tup[0] != tup2[0]).sum()
+    tars = torch.tensor([0])
+    for i in range(3):
+        tars += ((tup[1][i] != tup2[1][i]).sum())
+    total = im + tars
+    if total.item() != 1:
+        print("something is wrong")
 
 dataloader = DataLoader(dataset, 32, shuffle=False)
 

@@ -19,7 +19,8 @@ class BuildTarget:
         the annotation. The bbox is of the form [x, y, w, h].
     """
     
-    def __init__(self, anchors, annotes, scales, img_w, img_h):
+    def __init__(self, category_mapper, anchors, annotes, scales, img_w, img_h):
+        self.category_mapper = category_mapper
         self.annotes = annotes
         self.anchors = anchors
         self.full_scale_anchors = scale_anchors(anchors, 1, img_w, img_h)
@@ -99,9 +100,9 @@ class BuildTarget:
                 self.ignore_keys.append(best_key)
                 self._best_anchor_for_annote(annote, self.ignore_keys)
 
-    def build_targets(self, return_target=False, is_model_pred=True):
+    def build_target(self, return_target=False, is_model_pred=True):
         """
-        Loops through all annotations for an image and builds the targets.
+        Loops through all annotations for an image and builds the target.
         The result will be added to self.target.
 
         Parameters
@@ -129,6 +130,7 @@ class BuildTarget:
         for key, (annote, _) in self.anchor_assignment.items():
             sc, anchor_id, row, col = [int(x) for x in key.split("_")]
             bbox = annote['bbox']
+            id = self.category_mapper[annote['category_id']]
 
             if is_model_pred:
                 x, y = bbox[0] / self.scales[sc], bbox[1] / self.scales[sc]
@@ -139,7 +141,7 @@ class BuildTarget:
             self.target[sc][anchor_id, row, col] = torch.hstack([
                 torch.Tensor(bbox), 
                 torch.Tensor([1]), 
-                torch.Tensor([annote['category_id']])
+                torch.Tensor([id])
             ])
 
         if return_target:
