@@ -61,7 +61,7 @@ class Model:
             if (batch_num + 1) % self.notify_after == 0:
 
                 batch_loss = np.round(np.mean(self.history['total_loss'][epoch]), 3)
-                print(f"BATCH {batch_num} LOSS {batch_loss}")
+                print(f"BATCH {batch_num + 1} LOSS {batch_loss}")
 
             self.optimizer.zero_grad()
 

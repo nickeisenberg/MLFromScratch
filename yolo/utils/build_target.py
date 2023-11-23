@@ -130,7 +130,7 @@ class BuildTarget:
             sc, anchor_id, row, col = [int(x) for x in key.split("_")]
             bbox = annote['bbox']
 
-            if target:
+            if is_model_pred:
                 x, y = bbox[0] / self.scales[sc], bbox[1] / self.scales[sc]
                 x, y = x - int(x), y - int(y)
                 w, h = bbox[2] / self.scales[sc], bbox[3] / self.scales[sc]
