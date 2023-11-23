@@ -100,11 +100,11 @@ all_ims_targets = {}
 all_ims_scaled_targets = {}
 for img_id, (img, annotes) in enumerate(dataset):
     anchor_assign = BuildTarget(anchors, annotes, [32, 16, 8], 640, 512)
-    tar = anchor_assign.build_targets(return_target=True, match_bbox_to_pred=False)
+    tar = anchor_assign.build_targets(return_target=True, is_model_pred=False)
     all_ims_targets[img_id] = tar
     all_ims[img_id] = anchor_assign.anchor_assignment
     anchor_assign = BuildTarget(anchors, annotes, [32, 16, 8], 640, 512)
-    scale_tar = anchor_assign.build_targets(return_target=True, match_bbox_to_pred=True)
+    scale_tar = anchor_assign.build_targets(return_target=True, is_model_pred=True)
     all_ims_scaled_targets[img_id] = scale_tar
     if img_id == 100:
         break

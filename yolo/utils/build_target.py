@@ -99,7 +99,7 @@ class BuildTarget:
                 self.ignore_keys.append(best_key)
                 self._best_anchor_for_annote(annote, self.ignore_keys)
 
-    def build_targets(self, return_target=False, match_bbox_to_pred=False):
+    def build_targets(self, return_target=False, is_model_pred=True):
         """
         Loops through all annotations for an image and builds the targets.
         The result will be added to self.target.
@@ -109,7 +109,7 @@ class BuildTarget:
         return_target: boolean, default=False
             If True, then this method will return self.target.
 
-        match_bbox_to_pred: boolean, default=False
+        target: boolean, default=False
             There is costomization in the way the loss function is defined.
             If False, then this function will set the target to be
             target[sc][anchor, row, col] = [bbox, 1, category_id]. However, it
@@ -130,7 +130,7 @@ class BuildTarget:
             sc, anchor_id, row, col = [int(x) for x in key.split("_")]
             bbox = annote['bbox']
 
-            if match_bbox_to_pred:
+            if target:
                 x, y = bbox[0] / self.scales[sc], bbox[1] / self.scales[sc]
                 x, y = x - int(x), y - int(y)
                 w, h = bbox[2] / self.scales[sc], bbox[3] / self.scales[sc]

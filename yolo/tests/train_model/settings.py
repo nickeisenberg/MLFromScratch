@@ -2,12 +2,14 @@
 # Model settings. These variable will be impoted into the model file
 #------------------------------------------------------------------------------
 import os
+import json
 import torch
 from torch.optim import Adam
 from torch.utils.data.dataset import random_split, Subset
 from torchvision.transforms import v2
 from model import Model, YoloV3, YoloV3Loss
-from utils import Dataset, BuildTarget
+from utils import Dataset, BuildTarget, ConstructAnchors
+
 
 #------------------------------------------------------------------------------
 # Set the path to the data
@@ -15,9 +17,12 @@ from utils import Dataset, BuildTarget
 trainroot = os.path.join(
     os.environ['HOME'], 'Datasets', 'flir', 'images_thermal_train'
 )
-annot_file_path = os.path.join(
+annote_file_path = os.path.join(
     trainroot , 'coco.json'
 )
+
+with open(annote_file_path, 'r') as oj:
+    annotations = json.load(oj)
 
 #------------------------------------------------------------------------------
 # Number of classes
@@ -32,11 +37,25 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 #------------------------------------------------------------------------------
 # Define the anchors
 #------------------------------------------------------------------------------
-anchors = torch.tensor([ 
-    [(0.28, 0.22), (0.38, 0.48), (0.9, 0.78)], 
-    [(0.07, 0.15), (0.15, 0.11), (0.14, 0.29)], 
-    [(0.02, 0.03), (0.04, 0.07), (0.08, 0.06)], 
-]).reshape((-1, 2))
+
+# anchors = torch.tensor([ 
+#     [(0.28, 0.22), (0.38, 0.48), (0.9, 0.78)], 
+#     [(0.07, 0.15), (0.15, 0.11), (0.14, 0.29)], 
+#     [(0.02, 0.03), (0.04, 0.07), (0.08, 0.06)], 
+# ]).reshape((-1, 2))
+# anchors
+
+anchors = torch.tensor([
+    [0.38109066, 0.53757016],
+    [0.27592983, 0.2353135],
+    [0.14739895, 0.37145784],
+    [0.16064414, 0.13757506],
+    [0.07709555, 0.21342673],
+    [0.08780259, 0.07422413],
+    [0.03908951, 0.11424923],
+    [0.03016789, 0.05322024],
+    [0.01484773, 0.02237259]
+], dtype=torch.float32)
 
 #------------------------------------------------------------------------------
 # Image sizes and image scales
@@ -55,11 +74,11 @@ img_transform = v2.Compose([
 def target_transform(annotes, anchors=anchors, scales=scales):
     target =  BuildTarget(
         anchors, annotes, scales, image_size[-1], image_size[-2]
-    ).build_targets(return_target=True)
+    ).build_targets(return_target=True, is_model_pred=True)
     return target
 
 dataset = Dataset(
-    annot_file_path=annot_file_path, 
+    annot_file_path=annote_file_path, 
     annot_image_key='images', 
     annot_bbox_key='annotations', 
     image_file_name='file_name', 
@@ -72,13 +91,13 @@ dataset = Dataset(
     fix_file_path=trainroot
 )
 
-t_dataset = Subset(dataset, range(500))
+t_dataset = Subset(dataset, range(2000))
 
-v_dataset = Subset(dataset, range(500, 550))
+v_dataset = Subset(dataset, range(2000, 2100))
 
-batch_size = 4
+batch_size = 5
 
-notify_after = 1
+notify_after = 20
 
 #------------------------------------------------------------------------------
 # Instantiate the model, set the loss and set the optimizer

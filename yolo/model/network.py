@@ -67,7 +67,7 @@ class Model:
 
             predicitons = self.model(images)
             
-            batch_loss = torch.zeros(1).to(self.device)
+            batch_loss = torch.zeros(1, requires_grad=True).to(self.device)
             for scale_id, (preds, targs) in enumerate(zip(predicitons, targets)):
                 
                 scaled_anchors = scale_anchors(

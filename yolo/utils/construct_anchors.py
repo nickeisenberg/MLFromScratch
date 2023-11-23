@@ -16,7 +16,10 @@ class ConstructAnchors:
         self.kmeans = KMeans(n_clusters=n_clusters)
         self.clusters = self.kmeans.fit_predict(self.bboxes)
         cluster_centers = self.kmeans.cluster_centers_
-        sorted_args = np.argsort(np.linalg.norm(cluster_centers, axis=1))[::-1]
+        # sorted_args = np.argsort(np.linalg.norm(cluster_centers, axis=1))[::-1]
+        sorted_args = np.argsort(
+            cluster_centers[:,0] * cluster_centers[:, 1]
+        )[::-1]
         self.cluster_centers = np.hstack(
             (sorted_args.reshape((-1, 1)), cluster_centers[sorted_args])
         )
