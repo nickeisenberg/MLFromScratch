@@ -1,4 +1,5 @@
 from tests.train_model.settings import *
+from model import Model
 from utils.scale_anchors import scale_anchors
 
 yoloV3model = Model(
