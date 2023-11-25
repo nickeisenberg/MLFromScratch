@@ -40,9 +40,13 @@ class YoloV3Loss(nn.Module):
 
         scaled_anchors = scaled_anchors.reshape((1, 3, 1, 1, 2))
 
+        #-------------------------------------------------- 
+        # no_obj calculations
+        #-------------------------------------------------- 
         no_object_loss = self.bce( 
             (pred[..., 4:5][no_obj]), (target[..., 4:5][no_obj]), 
         )
+        #-------------------------------------------------- 
 
         pred[..., 0: 2] = self.sigmoid(pred[..., 0: 2])
         target[..., 2: 4] = torch.log(1e-6 + target[..., 2: 4] / scaled_anchors) 
@@ -55,6 +59,9 @@ class YoloV3Loss(nn.Module):
             dim=-1
         ) 
 
+        #-------------------------------------------------- 
+        # obj calculations
+        #-------------------------------------------------- 
         ious = iou(box_preds[obj], target[..., 0: 4][obj]).detach() 
         
         object_loss = self.mse(
@@ -73,6 +80,7 @@ class YoloV3Loss(nn.Module):
             pred[..., 5:][obj], 
             target[..., 5][obj].long()
         )
+        #-------------------------------------------------- 
 
         total_loss = box_loss + object_loss + no_object_loss + class_loss 
         
