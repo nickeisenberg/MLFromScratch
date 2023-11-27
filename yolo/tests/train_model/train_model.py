@@ -12,6 +12,9 @@ yoloV3model.device
 
 yoloV3model.fit(1)
 
+#--------------------------------------------------
+# view the losses
+#--------------------------------------------------
 loss_keys = [
     "box_loss",
     "object_loss",

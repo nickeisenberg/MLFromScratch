@@ -87,7 +87,7 @@ t_dataset = Subset(dataset, range(2000))
 
 v_dataset = Subset(dataset, range(2000, 2100))
 
-batch_size = 5
+batch_size = 10
 
 notify_after = 20
 
