@@ -15,10 +15,6 @@ ANNOT_FILE_PATH = os.path.join(
 with open(ANNOT_FILE_PATH, 'r') as oj:
     annotations = json.load(oj)
 
-annotations['images'][0]
-annotations['annotations'][0]
-
-annotations.keys()
 
 class AnnotationTransformer:
     def __init__(self, annotations, instructions={}):
@@ -109,9 +105,9 @@ instructions = {
     'deer': 'ignore',
     'skateboard': 'ignore',
     'train': 'ignore',
-    'dog': 'other',
-    'stroller': 'other',
-    'scooter': 'other',
+    'dog': 'ignore',
+    'stroller': 'ignore',
+    'scooter': 'ignore',
 }
 at_sub = AnnotationTransformer(annotations, instructions)
 
