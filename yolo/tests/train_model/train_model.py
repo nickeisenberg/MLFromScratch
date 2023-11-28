@@ -6,7 +6,7 @@ from sshtools.plotting import Plotter
 
 yoloV3model = Model(
     yoloV3, loss_fn, optimizer, t_dataset, v_dataset,
-    20, device, scales, anchors, notify_after
+    batch_size, device, scales, anchors, notify_after
 )
 
 yoloV3model.device

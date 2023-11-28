@@ -28,7 +28,7 @@ class AnnotationTransformer:
         self._categories()
         if len(instructions) > 0:
             self._transform_annotations()
-        self._categories()
+            self._categories()
         self._category_mapper()
 
     def _annotations(self):
@@ -43,8 +43,8 @@ class AnnotationTransformer:
 
     def _categories(self):
         self.id_category = {}
-        for x in self.annotations['annotations']:
-            cat_id  = x['category_id']
+        for annote in self.annotations['annotations']:
+            cat_id  = annote['category_id']
 
             for catinfo in self.annotations['categories']:
                 if catinfo['id'] == cat_id:
@@ -98,7 +98,7 @@ class AnnotationTransformer:
 
     def _category_mapper(self):
         self.cat_mapper = {}
-        for key, (cat, ids) in enumerate(self.category_id.items()):
+        for key, (_, ids) in enumerate(self.category_id.items()):
             for id in ids:
                 self.cat_mapper[id] = key
 
@@ -109,7 +109,7 @@ instructions = {
     'deer': 'ignore',
     'skateboard': 'ignore',
     'train': 'ignore',
-    'dog': 'ignore',
+    'dog': 'other',
     'stroller': 'other',
     'scooter': 'other',
 }

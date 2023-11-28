@@ -1,4 +1,4 @@
-from utils import Dataset, BuildTarget, category_mapper
+from utils import Dataset, BuildTarget, AnnotationTransformer
 import os
 import json
 from torchvision.transforms import v2
@@ -15,7 +15,9 @@ ANNOT_FILE_PATH = os.path.join(
 with open(ANNOT_FILE_PATH, 'r') as oj:
     annotations = json.load(oj)
 
-cat_map = category_mapper(annotations)
+at = AnnotationTransformer(annotations)
+
+cat_map = at.cat_mapper
 
 anchors = torch.tensor([ 
     [(0.28, 0.22), (0.38, 0.48), (0.9, 0.78)], 

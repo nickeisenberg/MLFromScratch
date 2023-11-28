@@ -5,10 +5,10 @@ import os
 import json
 import torch
 from torch.optim import Adam
-from torch.utils.data.dataset import Subset
+from torch.utils.data.dataset import Subset, random_split
 from torchvision.transforms import v2
 from model import YoloV3, YoloV3Loss
-from utils import Dataset, BuildTarget, category_mapper
+from utils import Dataset, BuildTarget, AnnotationTransformer
 
 
 #------------------------------------------------------------------------------
@@ -24,7 +24,22 @@ annote_file_path = os.path.join(
 with open(annote_file_path, 'r') as oj:
     annotations = json.load(oj)
 
-cat_map = category_mapper(annotations)
+instructions = {
+    'light': 'ignore',
+    'sign': 'ignore',
+    'hydrant': 'ignore',
+    'deer': 'ignore',
+    'skateboard': 'ignore',
+    'train': 'ignore',
+    'dog': 'ignore',
+    'stroller': 'ignore',
+    'scooter': 'ignore',
+}
+at = AnnotationTransformer(annotations, instructions=instructions)
+
+annotations = at.annotations
+
+cat_map = at.cat_mapper
 
 num_classes = len(cat_map)
 
@@ -83,9 +98,10 @@ dataset = Dataset(
     fix_file_path=trainroot
 )
 
-t_dataset = Subset(dataset, range(2000))
+t_dataset, v_dataset = random_split(dataset, [.8, .2])
 
-v_dataset = Subset(dataset, range(2000, 2100))
+# t_dataset = Subset(dataset, range(2000))
+# v_dataset = Subset(dataset, range(2000, 2100))
 
 batch_size = 10
 
