@@ -100,14 +100,14 @@ dataset = Dataset(
 
 t_dataset, v_dataset = random_split(dataset, [.8, .2])
 
-# t_dataset = Subset(dataset, range(2000))
-# v_dataset = Subset(dataset, range(2000, 2100))
+# t_dataset = Subset(dataset, range(200))
+# v_dataset = Subset(dataset, range(200, 210))
 
-batch_size = 24
+batch_size = 20
 
 epochs = 200
 
-notify_after = 20
+notify_after = 10
 
 #------------------------------------------------------------------------------
 # Instantiate the model, set the loss and set the optimizer
