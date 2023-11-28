@@ -107,7 +107,7 @@ batch_size = 20
 
 epochs = 200
 
-notify_after = 10
+notify_after = 20
 
 #------------------------------------------------------------------------------
 # Instantiate the model, set the loss and set the optimizer
