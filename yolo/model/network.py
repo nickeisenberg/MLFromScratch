@@ -27,7 +27,7 @@ class Model:
         self.optimizer = optimizer
         self.t_dataset = t_dataset
         self.v_dataset = v_dataset
-        self.t_dataloader = DataLoader(self.t_dataset, batch_size, shuffle=False)
+        self.t_dataloader = DataLoader(self.t_dataset, batch_size, shuffle=True)
         self.v_dataloader = DataLoader(self.v_dataset, batch_size, shuffle=False)
         self.device = device
         self.history = {
