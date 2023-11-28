@@ -30,7 +30,6 @@ class Dataset(_Dataset):
                  bbox_category_id, img_transform=None, target_transform=None, 
                  fix_file_path=None):
 
-
         if isinstance(annot_json, str): 
             with open(annot_json, 'r') as oaf:
                 self.annot = json.load(oaf)
