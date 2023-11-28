@@ -20,7 +20,7 @@ annotations['annotations'][0]
 
 annotations.keys()
 
-class CategoryMapper:
+class AnnotationTransformer:
     def __init__(self, annotations, instructions={}):
         self.annotations = annotations 
         self.instructions = instructions
@@ -28,6 +28,7 @@ class CategoryMapper:
         self._categories()
         if len(instructions) > 0:
             self._transform_annotations()
+        self._categories()
         self._category_mapper()
 
     def _annotations(self):
@@ -41,7 +42,6 @@ class CategoryMapper:
             return None
 
     def _categories(self):
-        self.category_id = {}
         self.id_category = {}
         for x in self.annotations['annotations']:
             cat_id  = x['category_id']
@@ -49,8 +49,14 @@ class CategoryMapper:
             for catinfo in self.annotations['categories']:
                 if catinfo['id'] == cat_id:
                     if cat_id not in self.id_category.keys():
-                        self.category_id[catinfo['name']] = cat_id
                         self.id_category[cat_id] = catinfo['name']
+
+        self.category_id = {}
+        for id, cat in self.id_category.items():
+            if cat not in self.category_id:
+                self.category_id[cat] = [id]
+            else:
+                self.category_id[cat].append(id)
 
     def _transform_annotations(self):
         new_annotations = {'images': [], 'annotations': [], 'categories': []}
@@ -92,8 +98,9 @@ class CategoryMapper:
 
     def _category_mapper(self):
         self.cat_mapper = {}
-        for category in self.annotations['categories']:
-            self.cat_mapper['id'] = len(self.cat_mapper)
+        for key, (cat, ids) in enumerate(self.category_id.items()):
+            for id in ids:
+                self.cat_mapper[id] = key
 
 instructions = {
     'light': 'ignore',
@@ -103,20 +110,20 @@ instructions = {
     'skateboard': 'ignore',
     'train': 'ignore',
     'dog': 'ignore',
-    'stroller': 'ignore',
-    'scooter': 'ignore',
+    'stroller': 'other',
+    'scooter': 'other',
 }
+at_sub = AnnotationTransformer(annotations, instructions)
 
-cat_mapper = CategoryMapper(annotations, instructions)
+at_sub.category_id
+at_sub.id_category
 
-cat_mapper = CategoryMapper(annotations)
+at_sub.cat_mapper
 
-cat_mapper.category_id
+at = AnnotationTransformer(annotations)
 
-cat_mapper.id_category
+at.category_id
+at.id_category
 
-len(cat_mapper.annotations['categories'])
-
-cat_mapper.cat_mapper
-
-
+len(at.annotations['images'])
+len(at_sub.annotations['images'])
