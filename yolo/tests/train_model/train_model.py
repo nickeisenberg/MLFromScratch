@@ -11,7 +11,7 @@ yoloV3model = Model(
 
 yoloV3model.device
 
-yoloV3model.fit(1)
+yoloV3model.fit(num_epochs=epochs)
 
 #--------------------------------------------------
 # view the losses
