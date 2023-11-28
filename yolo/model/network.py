@@ -1,4 +1,5 @@
 import torch
+import os
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 from torch.optim import Optimizer
@@ -53,6 +54,7 @@ class Model:
         for key in self.history.keys():
             self.history[key][epoch] = []
 
+        best_loss = 1e6
         for batch_num, (images, targets) in enumerate(self.t_dataloader):
 
             images = images.to(self.device)
@@ -91,8 +93,14 @@ class Model:
             batch_loss.backward()
 
             self.optimizer.step()
+        
+        avg_epoch_loss = np.mean(self.history['total_loss'][epoch])
+        if avg_epoch_loss < best_loss:
+            best_loss = avg_epoch_loss
+            path = f"{os.environ['HOME']}/GitRepos/ml_arcs/yolo/tests/train_model/state_dicts"
+            torch.save(self.model.state_dict(), os.path.join(path, "yolo.pth"))
 
-        print(f"EPOCH {epoch} AVG LOSS {np.round(np.mean(self.history['total_loss'][epoch]), 3)}")
+        print(f"EPOCH {epoch} AVG LOSS {np.round(avg_epoch_loss, 3)}")
 
         return None
 
