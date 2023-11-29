@@ -107,19 +107,19 @@ dataset = Dataset(
     fix_file_path=trainroot
 )
 
-# t_dataset, v_dataset = random_split(dataset, [.8, .2])
+t_dataset, v_dataset = random_split(dataset, [.8, .2])
 
-t_dataset = Subset(dataset, range(500))
-v_dataset = Subset(dataset, range(500, 600))
+# t_dataset = Subset(dataset, range(500))
+# v_dataset = Subset(dataset, range(500, 600))
 
-# batch_size = 24
-batch_size = 10
+batch_size = 24
+# batch_size = 10
 
-# epochs = 200
-epochs = 2
+epochs = 100
+# epochs = 2
 
 # notify_after = 20
-notify_after = 20
+notify_after = 40
 
 #------------------------------------------------------------------------------
 # Instantiate the model, set the loss and set the optimizer
