@@ -5,7 +5,7 @@ target to be a 0 tensor of the correct shape.
 """
 
 from typing import Tuple
-from tests.train_model.settings import t_dataset, scales, anchors
+from train_model.settings import t_dataset, scales, anchors
 from utils import scale_anchors, iou
 import torch
 import torch.nn as nn
