@@ -1,4 +1,5 @@
 from types import NoneType
+import pandas as pd
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
@@ -10,7 +11,6 @@ class Model:
     def __init__(
         self, 
         model: nn.Module | NoneType = None,
-        save_model_to: str | NoneType = None,
         loss_fn: nn.Module | NoneType = None, 
         optimizer: Optimizer | NoneType = None, 
         t_dataset: Dataset | NoneType = None,
@@ -22,7 +22,6 @@ class Model:
         notify_after: int = 40
         ):
         self.model = model
-        self.save_model_to = save_model_to
         if isinstance(loss_fn, nn.Module):
             self.loss_fn = loss_fn
         self.optimizer = optimizer
@@ -57,6 +56,64 @@ class Model:
         if anchors is not None:
             self.anchors = anchors.to(device)
         self.notify_after = notify_after
+
+    def fit(self, 
+            num_epochs, 
+            save_model_to: str, 
+            save_train_loss_csv_to: str | NoneType, 
+            save_val_loss_csv_to: str | NoneType):
+        if None in [self.model, self.t_dataset, self.v_dataset, self.loss_fn,
+                    self.anchors, self.scales, self.optimizer]:
+            err_msg = "model, t_dataset, v_dataset, loss_fn, anchors, scales, "
+            err_msg += "optimizer must not be None"
+            raise Exception(err_msg)
+
+        assert self.model is nn.Module
+
+        best_loss = 1e6
+        for i in range(1, num_epochs + 1):
+            self.model.train()
+
+            self._train_one_epoch(epoch=i)
+
+            self._validate_one_epoch(epoch=i)
+
+            avg_epoch_val_loss = np.mean(self.val_history['total_loss'][-1])
+            if avg_epoch_val_loss < best_loss:
+                best_loss = avg_epoch_val_loss
+                torch.save(self.model.state_dict(), save_model_to)
+
+            if save_train_loss_csv_to:
+                loss_keys = [
+                    "box_loss",
+                    "object_loss",
+                    "no_object_loss",
+                    "class_loss",
+                    "total_loss"
+                ]
+
+                epoch_train_losses = {key: [] for key in loss_keys}
+                for key in loss_keys:
+                    for epoch in range(1, len(self.history[key]) + 1):
+                        epoch_train_losses[key].append(
+                            np.mean(self.history[key][epoch])
+                        )
+
+                train_df = pd.DataFrame.from_dict(
+                    epoch_train_losses, orient='index'
+                ).T
+
+                train_df.to_csv(save_train_loss_csv_to)
+
+            if save_val_loss_csv_to:
+
+                val_df = pd.DataFrame.from_dict(
+                    self.val_history, orient='index'
+                ).T
+
+                val_df.to_csv(save_val_loss_csv_to)
+
+        return None
 
     def _train_one_epoch(self, epoch):
         assert self.optimizer is torch.optim.Optimizer
@@ -155,27 +212,3 @@ class Model:
 
         return None
 
-    def fit(self, num_epochs, save_model_to: str):
-        if None in [self.model, self.t_dataset, self.v_dataset, self.loss_fn,
-                    self.anchors, self.scales, self.optimizer]:
-            err_msg = "model, t_dataset, v_dataset, loss_fn, anchors, scales, "
-            err_msg += "optimizer must not be None"
-            raise Exception(err_msg)
-
-        assert self.model is nn.Module
-
-        best_loss = 1e6
-        for i in range(1, num_epochs + 1):
-
-            self.model.train()
-            self._train_one_epoch(epoch=i)
-
-            self.model.eval()
-            self._validate_one_epoch(epoch=i)
-
-            avg_epoch_val_loss = np.mean(self.val_history['total_loss'][-1])
-            if avg_epoch_val_loss < best_loss:
-                best_loss = avg_epoch_val_loss
-                torch.save(self.model.state_dict(), save_model_to)
-
-        return None

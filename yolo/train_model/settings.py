@@ -25,12 +25,6 @@ with open(annote_file_path, 'r') as oj:
     annotations = json.load(oj)
 
 #------------------------------------------------------------------------------
-# Set the path to save the model
-#------------------------------------------------------------------------------
-save_model_to = f"{os.environ['HOME']}/GitRepos/ml_arcs/yolo/tests"
-save_model_to += "/train_model/state_dicts/yolo.pth"
-
-#------------------------------------------------------------------------------
 # Transform the annotations and create the key mapper
 #------------------------------------------------------------------------------
 instructions = {
@@ -127,3 +121,19 @@ notify_after = 40
 yoloV3 = YoloV3(image_size[0], scales, num_classes).to(device)
 loss_fn = YoloV3Loss(device=device)
 optimizer = Adam(yoloV3.parameters(), lr=1e-5)
+
+#------------------------------------------------------------------------------
+# Put all of the model inputs into a dictionary to pass into the model
+#------------------------------------------------------------------------------
+model_inputs = {
+    "model": yoloV3, 
+    "loss_fn": loss_fn, 
+    "optimizer": optimizer, 
+    "t_dataset": t_dataset, 
+    "v_dataset": v_dataset,
+    "batch_size": batch_size, 
+    "device": device, 
+    "scales": scales, 
+    "anchors": anchors, 
+    "notify_after": notify_after,
+}

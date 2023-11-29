@@ -5,14 +5,11 @@ import numpy as np
 from sshtools.plotting import Plotter
 from sshtools.transfer import scp
 
-yoloV3model = Model(
-    yoloV3, save_model_to, loss_fn, optimizer, t_dataset, v_dataset,
-    batch_size, device, scales, anchors, notify_after
-)
+yoloV3model = Model(**model_inputs)
 
-yoloV3model.device
-
-yoloV3model.fit(num_epochs=epochs)
+save_model_to = f"{os.environ['HOME']}/GitRepos/ml_arcs/yolo/tests"
+save_model_to += "/train_model/state_dicts/yolo.pth"
+yoloV3model.fit(num_epochs=epochs, save_model_to=save_model_to)
 
 #--------------------------------------------------
 # view the losses
