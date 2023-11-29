@@ -24,6 +24,15 @@ annote_file_path = os.path.join(
 with open(annote_file_path, 'r') as oj:
     annotations = json.load(oj)
 
+#------------------------------------------------------------------------------
+# Set the path to save the model
+#------------------------------------------------------------------------------
+save_model_to = f"{os.environ['HOME']}/GitRepos/ml_arcs/yolo/tests"
+save_model_to += "/train_model/state_dicts/yolo.pth"
+
+#------------------------------------------------------------------------------
+# Transform the annotations and create the key mapper
+#------------------------------------------------------------------------------
 instructions = {
     'light': 'ignore',
     'sign': 'ignore',
@@ -98,16 +107,19 @@ dataset = Dataset(
     fix_file_path=trainroot
 )
 
-t_dataset, v_dataset = random_split(dataset, [.8, .2])
+# t_dataset, v_dataset = random_split(dataset, [.8, .2])
 
-# t_dataset = Subset(dataset, range(200))
-# v_dataset = Subset(dataset, range(200, 210))
+t_dataset = Subset(dataset, range(200))
+v_dataset = Subset(dataset, range(200, 210))
 
-batch_size = 24
+# batch_size = 24
+batch_size = 10
 
-epochs = 200
+# epochs = 200
+epochs = 2
 
-notify_after = 20
+# notify_after = 20
+notify_after = 10
 
 #------------------------------------------------------------------------------
 # Instantiate the model, set the loss and set the optimizer

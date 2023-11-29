@@ -11,7 +11,8 @@ from utils import scale_anchors
 class Model:
     def __init__(
         self, 
-        model: nn.Module, 
+        model: nn.Module,
+        save_model_to: str,
         loss_fn: YoloV3Loss, 
         optimizer: Optimizer, 
         t_dataset: Dataset,
@@ -23,6 +24,7 @@ class Model:
         notify_after: int
         ):
         self.model = model
+        self.save_model_to = save_model_to
         self.loss_fn = loss_fn
         self.optimizer = optimizer
         self.t_dataset = t_dataset
@@ -63,7 +65,7 @@ class Model:
             if (batch_num + 1) % self.notify_after == 0:
 
                 batch_loss = np.round(np.mean(self.history['total_loss'][epoch]), 3)
-                print(f"BATCH {batch_num + 1} LOSS {batch_loss}")
+                print(f"EPOCH {epoch} BATCH {batch_num + 1} LOSS {batch_loss}")
 
             self.optimizer.zero_grad()
 
@@ -95,11 +97,6 @@ class Model:
             self.optimizer.step()
         
         avg_epoch_loss = np.mean(self.history['total_loss'][epoch])
-        if avg_epoch_loss < best_loss:
-            best_loss = avg_epoch_loss
-            path = f"{os.environ['HOME']}/GitRepos/ml_arcs/yolo/tests/train_model/state_dicts"
-            torch.save(self.model.state_dict(), os.path.join(path, "yolo.pth"))
-
         print(f"EPOCH {epoch} AVG LOSS {np.round(avg_epoch_loss, 3)}")
 
         return None
@@ -119,6 +116,7 @@ class Model:
 
             with torch.no_grad():
                 predicitons = self.model(images)
+
                 for scale_id, (preds, targs) in enumerate(zip(predicitons, targets)):
 
                     scaled_anchors = scale_anchors(
@@ -138,13 +136,16 @@ class Model:
                         val_epoch_history[key] += val_history[key]
 
         for key in val_epoch_history.keys():
-            self.val_history[key].append(val_epoch_history[key] / len(self.v_dataset))
+            self.val_history[key].append(
+                val_epoch_history[key] / len(self.v_dataset)
+            )
 
-        print(f"EPOCH {epoch} AVG VAL LOSS {np.round(val_epoch_history['total_loss'], 3)}")
+        print(f"EPOCH {epoch} AVG VAL LOSS {np.round(self.val_history['total_loss'][-1], 3)}")
 
         return None
 
     def fit(self, num_epochs):
+        best_loss = 1e6
         for i in range(1, num_epochs + 1):
 
             self.model.train()
@@ -152,5 +153,10 @@ class Model:
 
             self.model.eval()
             self.validate_one_epoch(epoch=i)
+
+            avg_epoch_val_loss = np.mean(self.val_history['total_loss'][-1])
+            if avg_epoch_val_loss < best_loss:
+                best_loss = avg_epoch_val_loss
+                torch.save(self.model.state_dict(), self.save_model_to)
 
         return None
