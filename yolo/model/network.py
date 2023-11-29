@@ -60,15 +60,15 @@ class Model:
     def fit(self, 
             num_epochs, 
             save_model_to: str, 
-            save_train_loss_csv_to: str | NoneType, 
-            save_val_loss_csv_to: str | NoneType):
+            save_train_loss_csv_to: str | NoneType = None, 
+            save_val_loss_csv_to: str | NoneType = None):
         if None in [self.model, self.t_dataset, self.v_dataset, self.loss_fn,
                     self.anchors, self.scales, self.optimizer]:
             err_msg = "model, t_dataset, v_dataset, loss_fn, anchors, scales, "
             err_msg += "optimizer must not be None"
             raise Exception(err_msg)
 
-        assert self.model is nn.Module
+        assert isinstance(self.model, nn.Module)
 
         best_loss = 1e6
         for i in range(1, num_epochs + 1):
@@ -84,23 +84,19 @@ class Model:
                 torch.save(self.model.state_dict(), save_model_to)
 
             if save_train_loss_csv_to:
-                loss_keys = [
-                    "box_loss",
-                    "object_loss",
-                    "no_object_loss",
-                    "class_loss",
-                    "total_loss"
-                ]
 
-                epoch_train_losses = {key: [] for key in loss_keys}
-                for key in loss_keys:
+                train_losses = {key: [] for key in self.history.keys()}
+                for key in self.history.keys():
                     for epoch in range(1, len(self.history[key]) + 1):
-                        epoch_train_losses[key].append(
-                            np.mean(self.history[key][epoch])
-                        )
+                        by = max(1, len(self.history[key][epoch]) // 5)
+                        train_losses[key]+= self.history[key][epoch][:: by]
+                        if train_losses[key][-1] != self.history[key][epoch][-1]:
+                            train_losses[key].append(
+                                self.history[key][epoch][-1]
+                            )
 
                 train_df = pd.DataFrame.from_dict(
-                    epoch_train_losses, orient='index'
+                    train_losses, orient='index'
                 ).T
 
                 train_df.to_csv(save_train_loss_csv_to)
@@ -116,8 +112,8 @@ class Model:
         return None
 
     def _train_one_epoch(self, epoch):
-        assert self.optimizer is torch.optim.Optimizer
-        assert self.model is nn.Module
+        assert isinstance(self.optimizer, torch.optim.Optimizer)
+        assert isinstance(self.model, nn.Module)
 
         for key in self.history.keys():
             self.history[key][epoch] = []
@@ -167,8 +163,8 @@ class Model:
         return None
 
     def _validate_one_epoch(self, epoch):
-        assert self.model is nn.Module
-        assert self.v_dataset is Dataset
+        assert isinstance(self.model, nn.Module)
+        assert isinstance(self.v_dataset, Dataset)
 
         val_epoch_history = {
             "box_loss": 0.,

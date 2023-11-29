@@ -4,12 +4,67 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sshtools.plotting import Plotter
 from sshtools.transfer import scp
+import os
+
+import pandas as pd
 
 yoloV3model = Model(**model_inputs)
 
-save_model_to = f"{os.environ['HOME']}/GitRepos/ml_arcs/yolo/tests"
-save_model_to += "/train_model/state_dicts/yolo.pth"
-yoloV3model.fit(num_epochs=epochs, save_model_to=save_model_to)
+modelroot = f"{os.environ['HOME']}/GitRepos/ml_arcs/yolo/train_model"
+save_model_to = modelroot + "/state_dicts/yolotemp.pth"
+save_train_loss_csv_to = modelroot + "/lossdfs/train.csv"
+save_val_loss_csv_to = modelroot + "/lossdfs/val.csv"
+
+yoloV3model.fit(
+    num_epochs=epochs, 
+    save_model_to=save_model_to,
+    save_train_loss_csv_to=save_train_loss_csv_to,
+    save_val_loss_csv_to=save_val_loss_csv_to,
+)
+
+max(1, len(yoloV3model.history['total_loss'][1]) // 5)
+
+len(yoloV3model.history['total_loss'][1][::30])
+
+
+train_losses = {key: [] for key in yoloV3model.history.keys()}
+for key in yoloV3model.history.keys():
+    for epoch in range(1, len(yoloV3model.history[key]) + 1):
+        by = max(1, len(yoloV3model.history[key][epoch]) // 5)
+        train_losses[key] += yoloV3model.history[key][epoch][:: by]
+        print(len(train_losses[key]))
+        print(type(yoloV3model.history[key][epoch][:: by]))
+        # print(len(yoloV3model.history[key][epoch][:: by]))
+        if train_losses[key][-1] != yoloV3model.history[key][epoch][-1]:
+            train_losses[key].append(
+                yoloV3model.history[key][epoch][-1]
+            )
+
+len(train_losses['total_loss'])
+
+
+
+
+
+import pandas as pd
+pd.read_csv("/home/nicholas/GitRepos/ml_arcs/yolo/train_model/lossdfs/train.csv").shape
+pd.read_csv("/home/nicholas/GitRepos/ml_arcs/yolo/train_model/lossdfs/val.csv").shape
+
+loss_keys = [
+    "box_loss",
+    "object_loss",
+    "no_object_loss",
+    "class_loss",
+    "total_loss"
+]
+stacked_losses = {}
+for key in loss_keys:
+    stacked_losses[key] = np.hstack([
+        yoloV3model.history[key][epoch]
+        for epoch in range(1, len(yoloV3model.history[key]) + 1)
+    ])
+
+x = pd.DataFrame.from_dict(stacked_losses)
 
 #--------------------------------------------------
 # view the losses
