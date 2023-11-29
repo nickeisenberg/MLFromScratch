@@ -109,8 +109,8 @@ dataset = Dataset(
 
 # t_dataset, v_dataset = random_split(dataset, [.8, .2])
 
-t_dataset = Subset(dataset, range(200))
-v_dataset = Subset(dataset, range(200, 210))
+t_dataset = Subset(dataset, range(500))
+v_dataset = Subset(dataset, range(500, 600))
 
 # batch_size = 24
 batch_size = 10
@@ -119,7 +119,7 @@ batch_size = 10
 epochs = 2
 
 # notify_after = 20
-notify_after = 10
+notify_after = 20
 
 #------------------------------------------------------------------------------
 # Instantiate the model, set the loss and set the optimizer

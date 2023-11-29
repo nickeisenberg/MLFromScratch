@@ -39,7 +39,7 @@ class YoloV3Loss(nn.Module):
         )
 
         if obj.sum() > 0:
-            pred[..., 0: 2] = self.sigmoid(pred[..., 0: 2])
+            # pred[..., 0: 2] = self.sigmoid(pred[..., 0: 2])
             target[..., 2: 4] = torch.log(1e-6 + target[..., 2: 4] / scaled_anchors) 
 
             box_preds = torch.cat(
@@ -53,7 +53,8 @@ class YoloV3Loss(nn.Module):
             ious = iou(box_preds[obj], target[..., 0: 4][obj]).detach() 
             
             object_loss = self.mse(
-                self.sigmoid(pred[..., 4: 5][obj]), 
+                # self.sigmoid(pred[..., 4: 5][obj]), 
+                pred[..., 4: 5][obj], 
                 ious * target[..., 4: 5][obj]
             ) 
 
