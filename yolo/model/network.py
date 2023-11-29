@@ -208,3 +208,18 @@ class Model:
 
         return None
 
+    def load_state_dict(self, path):
+        assert isinstance(self.model, nn.Module)
+        self.model.load_state_dict(torch.load(path))
+
+    def produce_annotations(self, img):
+        assert isinstance(self.model, nn.Module)
+        assert isinstance(self.anchors, torch.Tensor)
+        assert isinstance(self.scales, torch.Tensor)
+
+        if len(img.shape) == 3:
+            img = img.unsqueeze(0)
+        elif len(img.shape) < 3 or len(img.shape) > 4:
+            raise Exception("Input either a 3-d image tensor or a batched 4-d tensor")
+
+        output = self.model(img)

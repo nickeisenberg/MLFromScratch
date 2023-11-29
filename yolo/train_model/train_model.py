@@ -1,4 +1,4 @@
-from train_model.settings import *
+from train_model.settings import model_inputs
 from model import Model
 import matplotlib.pyplot as plt
 import numpy as np
@@ -14,6 +14,7 @@ modelroot = f"{os.environ['HOME']}/GitRepos/ml_arcs/yolo/train_model"
 save_model_to = modelroot + "/state_dicts/yolotemp.pth"
 save_train_loss_csv_to = modelroot + "/lossdfs/train.csv"
 save_val_loss_csv_to = modelroot + "/lossdfs/val.csv"
+epochs = 100
 
 yoloV3model.fit(
     num_epochs=epochs, 
@@ -21,22 +22,6 @@ yoloV3model.fit(
     save_train_loss_csv_to=save_train_loss_csv_to,
     save_val_loss_csv_to=save_val_loss_csv_to,
 )
-
-loss_keys = [
-    "box_loss",
-    "object_loss",
-    "no_object_loss",
-    "class_loss",
-    "total_loss"
-]
-stacked_losses = {}
-for key in loss_keys:
-    stacked_losses[key] = np.hstack([
-        yoloV3model.history[key][epoch]
-        for epoch in range(1, len(yoloV3model.history[key]) + 1)
-    ])
-
-x = pd.DataFrame.from_dict(stacked_losses)
 
 #--------------------------------------------------
 # view the losses
