@@ -43,7 +43,7 @@ for i in range(len(ax)):
     ax[i].set_title(f"{loss_keys[i]}")
 
 port = "2222"
-save_path = "/home/nicholas/GitRepos/ml_arcs/yolo/tests/train_model/lossplots"
+save_path = "/home/nicholas/GitRepos/ml_arcs/yolo/train_model/lossplots"
 user = "nicholas"
 ip = "174.72.155.21"
 plotter = Plotter(user, ip, save_path, port)
@@ -52,8 +52,11 @@ plotter.show("val_loss_1_0", vallossfig)
 
 plotter.show("train_loss_1_0", trainlossfig)
 
-src = "/home/ubuntu/GitRepos/ml_arcs/yolo/tests/train_model/state_dicts/yolo_1.pth"
-dst = "/home/nicholas/GitRepos/ml_arcs/yolo/tests/train_model/state_dicts/yolo_1.pth"
+#--------------------------------------------------
+# move model to local
+#--------------------------------------------------
+src = "/home/ubuntu/GitRepos/ml_arcs/yolo/train_model/state_dicts/yolo_1.pth"
+dst = "/home/nicholas/GitRepos/ml_arcs/yolo/train_model/state_dicts/yolo_1.pth"
 usr = "nicholas"
 ip = "174.72.155.21"
 port = "2222"
