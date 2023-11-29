@@ -1,36 +1,42 @@
+from types import NoneType
 import torch
-import os
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 from torch.optim import Optimizer
 import numpy as np
-from torch.utils.data.dataset import random_split
-from model.loss import YoloV3Loss
 from utils import scale_anchors
 
 class Model:
     def __init__(
         self, 
-        model: nn.Module,
-        save_model_to: str,
-        loss_fn: YoloV3Loss, 
-        optimizer: Optimizer, 
-        t_dataset: Dataset,
-        v_dataset: Dataset,
-        batch_size: int,
-        device: str,
-        scales: torch.Tensor,
-        anchors: torch.Tensor,
-        notify_after: int
+        model: nn.Module | NoneType = None,
+        save_model_to: str | NoneType = None,
+        loss_fn: nn.Module | NoneType = None, 
+        optimizer: Optimizer | NoneType = None, 
+        t_dataset: Dataset | NoneType = None,
+        v_dataset: Dataset | NoneType = None,
+        batch_size: int | NoneType = None,
+        device: str = "cpu",
+        scales: torch.Tensor | NoneType = None,
+        anchors: torch.Tensor | NoneType = None,
+        notify_after: int = 40
         ):
         self.model = model
         self.save_model_to = save_model_to
-        self.loss_fn = loss_fn
+        if isinstance(loss_fn, nn.Module):
+            self.loss_fn = loss_fn
         self.optimizer = optimizer
         self.t_dataset = t_dataset
         self.v_dataset = v_dataset
-        self.t_dataloader = DataLoader(self.t_dataset, batch_size, shuffle=True)
-        self.v_dataloader = DataLoader(self.v_dataset, batch_size, shuffle=False)
+        if self.t_dataset is not None:
+            _, self.img_height, self.img_width = self.t_dataset.__getitem__(0)[0].shape
+            self.t_dataloader = DataLoader(
+                self.t_dataset, batch_size, shuffle=True
+            )
+        if self.v_dataset is not None:
+            self.v_dataloader = DataLoader(
+                self.v_dataset, batch_size, shuffle=False
+            )
         self.device = device
         self.history = {
             "box_loss": {},
@@ -46,17 +52,19 @@ class Model:
             "class_loss": [],
             "total_loss": [],
         }
-        self.scales = scales.to(device)
-        self.anchors = anchors.to(device)
+        if scales is not None:
+            self.scales = scales.to(device)
+        if anchors is not None:
+            self.anchors = anchors.to(device)
         self.notify_after = notify_after
-        _, self.img_height, self.img_width = t_dataset.__getitem__(0)[0].shape
 
-    def train_one_epoch(self, epoch):
+    def _train_one_epoch(self, epoch):
+        assert self.optimizer is torch.optim.Optimizer
+        assert self.model is nn.Module
 
         for key in self.history.keys():
             self.history[key][epoch] = []
 
-        best_loss = 1e6
         for batch_num, (images, targets) in enumerate(self.t_dataloader):
 
             images = images.to(self.device)
@@ -82,7 +90,7 @@ class Model:
                 )
 
                 _batch_loss, batch_history = self.loss_fn(
-                    preds, 
+                    preds,
                     targs,
                     scaled_anchors
                 )
@@ -101,7 +109,10 @@ class Model:
 
         return None
 
-    def validate_one_epoch(self, epoch):
+    def _validate_one_epoch(self, epoch):
+        assert self.model is nn.Module
+        assert self.v_dataset is Dataset
+
         val_epoch_history = {
             "box_loss": 0.,
             "object_loss": 0.,
@@ -127,8 +138,8 @@ class Model:
                     )
 
                     _, val_history = self.loss_fn(
-                        preds, 
-                        targs, 
+                        preds,
+                        targs,
                         scaled_anchors
                     )
 
@@ -144,19 +155,27 @@ class Model:
 
         return None
 
-    def fit(self, num_epochs):
+    def fit(self, num_epochs, save_model_to: str):
+        if None in [self.model, self.t_dataset, self.v_dataset, self.loss_fn,
+                    self.anchors, self.scales, self.optimizer]:
+            err_msg = "model, t_dataset, v_dataset, loss_fn, anchors, scales, "
+            err_msg += "optimizer must not be None"
+            raise Exception(err_msg)
+
+        assert self.model is nn.Module
+
         best_loss = 1e6
         for i in range(1, num_epochs + 1):
 
             self.model.train()
-            self.train_one_epoch(epoch=i)
+            self._train_one_epoch(epoch=i)
 
             self.model.eval()
-            self.validate_one_epoch(epoch=i)
+            self._validate_one_epoch(epoch=i)
 
             avg_epoch_val_loss = np.mean(self.val_history['total_loss'][-1])
             if avg_epoch_val_loss < best_loss:
                 best_loss = avg_epoch_val_loss
-                torch.save(self.model.state_dict(), self.save_model_to)
+                torch.save(self.model.state_dict(), save_model_to)
 
         return None
