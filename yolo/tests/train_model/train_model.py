@@ -3,6 +3,7 @@ from model import Model
 import matplotlib.pyplot as plt
 import numpy as np
 from sshtools.plotting import Plotter
+from sshtools.transfer import scp
 
 yoloV3model = Model(
     yoloV3, save_model_to, loss_fn, optimizer, t_dataset, v_dataset,
@@ -27,7 +28,7 @@ loss_keys = [
 stacked_losses = {}
 for key in loss_keys:
     stacked_losses[key] = np.hstack([
-        yoloV3model.history[key][epoch][::5]
+        np.mean(yoloV3model.history[key][epoch])
         for epoch in range(1, len(yoloV3model.history[key]) + 1)
     ])
 
@@ -50,3 +51,10 @@ plotter = Plotter(user, ip, save_path, port)
 plotter.show("val_loss_1_0", vallossfig)
 
 plotter.show("train_loss_1_0", trainlossfig)
+
+src = "/home/ubuntu/GitRepos/ml_arcs/yolo/tests/train_model/state_dicts/yolo_1.pth"
+dst = "/home/nicholas/GitRepos/ml_arcs/yolo/tests/train_model/state_dicts/yolo_1.pth"
+usr = "nicholas"
+ip = "174.72.155.21"
+port = "2222"
+scp(src, dst, usr, ip, port)
