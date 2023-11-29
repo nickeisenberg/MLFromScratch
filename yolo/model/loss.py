@@ -14,9 +14,6 @@ class YoloV3Loss(nn.Module):
 
     def forward(self, pred, target, scaled_anchors) -> Tuple[torch.Tensor, dict]:
         """
-        This was the original loss from geeksforgeeks. This will not work anymore
-        as I have edited the yolo model to account for some of the operations 
-        that are taken place in this model below.
 
         Recall that the pred and target is a tuple of 3 tensors. As of now,
         This forward only handles each piece separately, ie, pred[0] and 
