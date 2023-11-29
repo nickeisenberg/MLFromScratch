@@ -27,7 +27,8 @@ loss_keys = [
 stacked_losses = {}
 for key in loss_keys:
     stacked_losses[key] = np.hstack([
-        yoloV3model.history[key][i] for i in range(1, len(yoloV3model.history[key]) + 1)
+        yoloV3model.history[key][epoch][::5]
+        for epoch in range(1, len(yoloV3model.history[key]) + 1)
     ])
 
 trainlossfig, ax = plt.subplots(1, 5, figsize=(12, 5))
@@ -46,6 +47,6 @@ user = "nicholas"
 ip = "174.72.155.21"
 plotter = Plotter(user, ip, save_path, port)
 
-plotter.show("val_loss", vallossfig)
+plotter.show("val_loss_1_0", vallossfig)
 
-plotter.show("train_loss", trainlossfig)
+plotter.show("train_loss_1_0", trainlossfig)
