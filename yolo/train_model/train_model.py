@@ -22,34 +22,6 @@ yoloV3model.fit(
     save_val_loss_csv_to=save_val_loss_csv_to,
 )
 
-max(1, len(yoloV3model.history['total_loss'][1]) // 5)
-
-len(yoloV3model.history['total_loss'][1][::30])
-
-
-train_losses = {key: [] for key in yoloV3model.history.keys()}
-for key in yoloV3model.history.keys():
-    for epoch in range(1, len(yoloV3model.history[key]) + 1):
-        by = max(1, len(yoloV3model.history[key][epoch]) // 5)
-        train_losses[key] += yoloV3model.history[key][epoch][:: by]
-        print(len(train_losses[key]))
-        print(type(yoloV3model.history[key][epoch][:: by]))
-        # print(len(yoloV3model.history[key][epoch][:: by]))
-        if train_losses[key][-1] != yoloV3model.history[key][epoch][-1]:
-            train_losses[key].append(
-                yoloV3model.history[key][epoch][-1]
-            )
-
-len(train_losses['total_loss'])
-
-
-
-
-
-import pandas as pd
-pd.read_csv("/home/nicholas/GitRepos/ml_arcs/yolo/train_model/lossdfs/train.csv").shape
-pd.read_csv("/home/nicholas/GitRepos/ml_arcs/yolo/train_model/lossdfs/val.csv").shape
-
 loss_keys = [
     "box_loss",
     "object_loss",
