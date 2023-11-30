@@ -128,12 +128,9 @@ v_dataset = Dataset(
     fix_file_path=trainroot
 )
 
-t_dataset = Subset(t_dataset, range(200))
-v_dataset = Subset(v_dataset, range(200))
+batch_size = 24
 
-batch_size = 4
-
-notify_after = 10
+notify_after = 40
 
 #------------------------------------------------------------------------------
 # Instantiate the model, set the loss and set the optimizer
