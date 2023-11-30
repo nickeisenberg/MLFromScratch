@@ -5,6 +5,7 @@ import numpy as np
 from sshtools.plotting import Plotter
 from sshtools.transfer import scp
 import os
+import torch
 
 yoloV3model = Model(**model_inputs)
 
