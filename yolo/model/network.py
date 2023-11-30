@@ -136,7 +136,7 @@ class Model:
             for scale_id, (preds, targs) in enumerate(zip(predicitons, targets)):
                 
                 scaled_anchors = scale_anchors(
-                    self.anchors[scale_id: scale_id + 3], 
+                    self.anchors[scale_id * 3: (scale_id + 1) * 3], 
                     self.scales[scale_id],
                     self.img_width, self.img_height,
                     device=self.device
@@ -184,7 +184,7 @@ class Model:
                 for scale_id, (preds, targs) in enumerate(zip(predicitons, targets)):
 
                     scaled_anchors = scale_anchors(
-                        self.anchors[scale_id: scale_id + 3], 
+                        self.anchors[scale_id * 3: (scale_id + 1) * 3], 
                         self.scales[scale_id],
                         self.img_width, self.img_height,
                         device=self.device
