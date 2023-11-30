@@ -1,15 +1,15 @@
-from train_model.settings import model_inputs
+from tests.pre_train.dry_run_settings import model_inputs
 from model import Model
 import matplotlib.pyplot as plt
 import numpy as np
-from sshtools.plotting import Plotter
-from sshtools.transfer import scp
 import os
 import torch
+from utils import scale_anchors
+import pandas as pd
 
 yoloV3model = Model(**model_inputs)
 
-modelroot = f"{os.environ['HOME']}/GitRepos/ml_arcs/yolo/train_model"
+modelroot = f"{os.environ['HOME']}/GitRepos/ml_arcs/yolo/tests/pre_train"
 save_best_train_to = modelroot + "/state_dicts/yolo_train.pth"
 save_best_val_to = modelroot + "/state_dicts/yolo_val.pth"
 save_train_loss_csv_to = modelroot + "/lossdfs/train.csv"
@@ -24,7 +24,6 @@ yoloV3model.fit(
     save_val_loss_csv_to=save_val_loss_csv_to,
 )
 
-from utils import scale_anchors
 
 img, tar = model_inputs["t_dataset"][0]
 
@@ -71,31 +70,14 @@ for scale_id, (t, p) in enumerate(zip(tar, pred)):
             print(t_bbox)
             print("")
 
-
 #--------------------------------------------------
 # view the losses
 #--------------------------------------------------
-loss_keys = [
-    "box_loss",
-    "object_loss",
-    "no_object_loss",
-    "class_loss",
-    "total_loss"
-]
 
-stacked_losses = {}
-for key in loss_keys:
-    stacked_losses[key] = np.hstack([
-        np.mean(yoloV3model.history[key][epoch])
-        for epoch in range(1, len(yoloV3model.history[key]) + 1)
-    ])
+train_loss = pd.read_csv(save_train_loss_csv_to, index_col=0)
+val_loss = pd.read_csv(save_val_loss_csv_to, index_col=0)
 
-trainlossfig, ax = plt.subplots(1, 5, figsize=(12, 5))
-for i in range(len(ax)):
-    ax[i].plot(stacked_losses[loss_keys[i]])
-    ax[i].set_title(f"{loss_keys[i]}")
+train_loss['total_loss']
 
-vallossfig, ax = plt.subplots(1, 5, figsize=(12, 5))
-for i in range(len(ax)):
-    ax[i].plot(yoloV3model.val_history[loss_keys[i]])
-    ax[i].set_title(f"{loss_keys[i]}")
+plt.plot(train_loss['total_loss'])
+plt.show()

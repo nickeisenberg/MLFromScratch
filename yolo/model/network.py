@@ -175,11 +175,11 @@ class Model:
         assert isinstance(self.v_dataset, Dataset)
 
         val_epoch_history = {
-            "box_loss": 0.,
-            "object_loss": 0.,
-            "no_object_loss": 0.,
-            "class_loss": 0.,
-            "total_loss": 0.
+            "box_loss": [],
+            "object_loss": [],
+            "no_object_loss": [],
+            "class_loss": [],
+            "total_loss": []
         }
         for images, targets in self.v_dataloader:
 
@@ -205,11 +205,11 @@ class Model:
                     )
 
                     for key in val_epoch_history.keys():
-                        val_epoch_history[key] += val_history[key]
+                        val_epoch_history[key].append(val_history[key])
 
         for key in val_epoch_history.keys():
             self.val_history[key].append(
-                val_epoch_history[key] / len(self.v_dataset)
+                np.mean(val_epoch_history[key])
             )
 
         print(f"EPOCH {epoch} AVG VAL LOSS {np.round(self.val_history['total_loss'][-1], 3)}")
