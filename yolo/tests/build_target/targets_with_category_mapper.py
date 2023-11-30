@@ -41,6 +41,12 @@ target =  BuildTarget(
 )
 target.build_target(return_target=False, is_model_pred=True)
 
+target.target[1][..., 3:4].reshape(-1).max()
+
+torch.log(1e-6 + target.target[2][..., 3:4].reshape(-1).max())
+torch.log(1e-6 + target.target[2][..., 3:4].reshape(-1).min())
+
+
 for key in target.anchor_assignment.keys():
     key = [int(x) for x in key.split("_")]
     s, a, r, c = key

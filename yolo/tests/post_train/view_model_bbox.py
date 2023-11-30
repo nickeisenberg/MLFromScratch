@@ -8,8 +8,6 @@ import torch
 import numpy as np
 import itertools
 
-from utils.scale_anchors import scale_anchors
-
 yoloV3 = YoloV3(1, scales, num_classes)
 
 model = Model(model=yoloV3, t_dataset=t_dataset, v_dataset=v_dataset, 
@@ -22,9 +20,19 @@ model.load_state_dict(sd)
 #--------------------------------------------------
 # add bounding boxes to images
 #--------------------------------------------------
-img_arr, tar = model.t_dataset[1]
+img_arr, tar = model.t_dataset[10]
+
+ex = list(zip(*torch.where(tar[1][..., 4:5] == 1)[:-1]))[0]
+ex
 
 pred = [_pred.detach().numpy()[0] for _pred in model.model(img_arr.unsqueeze(0))]
+
+tar[1][ex][:5]
+pred[1][ex][:5]
+
+bad = list(zip(*np.where(pred[0][..., 3: 4] > 9999)[:-1]))
+
+pred[0][bad[0]]
 
 for scale_id, ps in enumerate(pred):
     scale = scales[scale_id].item()
@@ -32,8 +40,6 @@ for scale_id, ps in enumerate(pred):
     dims = itertools.product(range(ps.shape[0]), range(ps.shape[1]), range(ps.shape[2]))
     for anc, row, col in dims:
         x, y, w, h, p = ps[anc][row][col][: 5]
-        if w > xxx:
-            xxx = w
         x, y = np.round((x + col) * scale), np.round((y + row) * scale)
         w = np.round(np.exp(w) * sanchors[anc][0].item())
         h = np.round(np.exp(h) * sanchors[anc][1].item())
@@ -62,8 +68,6 @@ for scale_id, ps in enumerate(pred):
             if score > iou_thresh[scale_id]:
                 dims.remove(dim)
 
-keeps[2]
-
 img = ToPILImage()(img_arr)
 
 if img.mode == 'L':
@@ -84,4 +88,3 @@ for bbox in keeps[1]:
         )
 
 img.show()
-

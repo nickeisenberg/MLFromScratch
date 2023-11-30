@@ -14,7 +14,6 @@ class YoloV3Loss(nn.Module):
 
     def forward(self, pred, target, scaled_anchors) -> Tuple[torch.Tensor, dict]:
         """
-
         Recall that the pred and target is a tuple of 3 tensors. As of now,
         This forward only handles each piece separately, ie, pred[0] and 
         target[0] etc. I may generalize to just accept the whole tuple later.
