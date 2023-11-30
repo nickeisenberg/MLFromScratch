@@ -10,7 +10,7 @@ from utils import scale_anchors, iou
 import torch
 import torch.nn as nn
 
-class YoloV3Loss(nn.Module):
+class YoloV3LossBad(nn.Module):
     def __init__(self, device):
         super().__init__()
         self.mse = nn.MSELoss() 
@@ -99,7 +99,7 @@ for _target in t_dataset.__getitem__(1)[1]:
     target.append(_target.unsqueeze(0))
     pred.append(torch.randn(size=_target.shape).unsqueeze(0))
 
-loss_fcn = YoloV3Loss(device='cpu')
+loss_fcn = YoloV3LossBad(device='cpu')
 
 losses = []
 for i, scale in enumerate(scales):

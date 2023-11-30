@@ -17,12 +17,22 @@ from utils import Dataset, BuildTarget, AnnotationTransformer
 trainroot = os.path.join(
     os.environ['HOME'], 'Datasets', 'flir', 'images_thermal_train'
 )
-annote_file_path = os.path.join(
+train_annote_path = os.path.join(
     trainroot , 'coco.json'
 )
 
-with open(annote_file_path, 'r') as oj:
-    annotations = json.load(oj)
+with open(train_annote_path, 'r') as oj:
+    t_annotations = json.load(oj)
+
+valroot = os.path.join(
+    os.environ['HOME'], 'Datasets', 'flir', 'images_thermal_val'
+)
+val_annote_path = os.path.join(
+    valroot , 'coco.json'
+)
+
+with open(val_annote_path, 'r') as oj:
+    v_annotations = json.load(oj)
 
 #------------------------------------------------------------------------------
 # Transform the annotations and create the key mapper
@@ -38,11 +48,14 @@ instructions = {
     'stroller': 'ignore',
     'scooter': 'ignore',
 }
-at = AnnotationTransformer(annotations, instructions=instructions)
+t_at = AnnotationTransformer(t_annotations, instructions=instructions)
 
-annotations = at.annotations
+v_at = AnnotationTransformer(v_annotations, instructions=instructions)
 
-cat_map = at.cat_mapper
+t_annotations = t_at.annotations
+v_annotations = t_at.annotations
+
+cat_map = t_at.cat_mapper
 
 num_classes = len(cat_map)
 
@@ -87,8 +100,8 @@ def target_transform(annotes, anchors=anchors, scales=scales):
     ).build_target(return_target=True, is_model_pred=True)
     return target
 
-dataset = Dataset(
-    annot_json=annotations,
+t_dataset = Dataset(
+    annot_json=t_annotations,
     annot_image_key='images', 
     annot_bbox_key='annotations', 
     image_file_name='file_name', 
@@ -101,12 +114,26 @@ dataset = Dataset(
     fix_file_path=trainroot
 )
 
-torch.manual_seed(1)
-t_dataset, v_dataset = random_split(dataset, [.8, .2])
+v_dataset = Dataset(
+    annot_json=t_annotations,
+    annot_image_key='images', 
+    annot_bbox_key='annotations', 
+    image_file_name='file_name', 
+    image_image_id='id', 
+    bbox_bbox='bbox', 
+    bbox_image_id='image_id', 
+    bbox_category_id='category_id', 
+    img_transform=img_transform,
+    target_transform=target_transform,
+    fix_file_path=trainroot
+)
 
-batch_size = 24
+t_dataset = Subset(t_dataset, range(200))
+v_dataset = Subset(v_dataset, range(200))
 
-notify_after = 40
+batch_size = 4
+
+notify_after = 10
 
 #------------------------------------------------------------------------------
 # Instantiate the model, set the loss and set the optimizer

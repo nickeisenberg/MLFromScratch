@@ -28,7 +28,7 @@ class Model:
         self.t_dataset = t_dataset
         self.v_dataset = v_dataset
         if self.t_dataset is not None:
-            _, self.img_height, self.img_width = self.t_dataset.__getitem__(0)[0].shape
+            _, self.img_height, self.img_width = self.t_dataset[0][0].shape
             self.t_dataloader = DataLoader(
                 self.t_dataset, batch_size, shuffle=True
             )
@@ -59,9 +59,11 @@ class Model:
 
     def fit(self, 
             num_epochs, 
-            save_model_to: str, 
+            save_best_train_model_to: str, 
+            save_best_val_model_to: str, 
             save_train_loss_csv_to: str | NoneType = None, 
             save_val_loss_csv_to: str | NoneType = None):
+
         if None in [self.model, self.t_dataset, self.v_dataset, self.loss_fn,
                     self.anchors, self.scales, self.optimizer]:
             err_msg = "model, t_dataset, v_dataset, loss_fn, anchors, scales, "
@@ -70,7 +72,9 @@ class Model:
 
         assert isinstance(self.model, nn.Module)
 
-        best_loss = 1e6
+        best_val_loss = 1e6
+        best_train_loss = 1e6
+
         for i in range(1, num_epochs + 1):
             self.model.train()
 
@@ -78,13 +82,17 @@ class Model:
 
             self._validate_one_epoch(epoch=i)
 
-            avg_epoch_val_loss = np.mean(self.val_history['total_loss'][-1])
-            if avg_epoch_val_loss < best_loss:
-                best_loss = avg_epoch_val_loss
-                torch.save(self.model.state_dict(), save_model_to)
+            avg_epoch_val_loss = self.val_history['total_loss'][-1]
+            if avg_epoch_val_loss < best_val_loss:
+                best_val_loss = avg_epoch_val_loss
+                torch.save(self.model.state_dict(), save_best_val_model_to)
+
+            avg_epoch_train_loss = np.mean(self.history['total_loss'][i])
+            if avg_epoch_train_loss < best_train_loss:
+                best_train_loss = avg_epoch_train_loss
+                torch.save(self.model.state_dict(), save_best_train_model_to)
 
             if save_train_loss_csv_to:
-
                 train_losses = {key: [] for key in self.history.keys()}
                 for key in self.history.keys():
                     for epoch in range(1, len(self.history[key]) + 1):

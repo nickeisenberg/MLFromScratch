@@ -1,11 +1,14 @@
 import json
 import os
 from PIL import Image, ImageDraw
+from utils import AnnotationTransformer
 
 DATAPATH = "/home/nicholas/Datasets/flir/images_thermal_train"
 
 with open(os.path.join(DATAPATH, 'coco.json'), 'r') as file:
     data = json.load(file)
+
+at = AnnotationTransformer(data)
 
 #--------------------------------------------------
 # Select an image to view the bounding boxes
