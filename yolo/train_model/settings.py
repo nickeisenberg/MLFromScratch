@@ -96,8 +96,8 @@ img_transform = v2.Compose([
 
 def target_transform(annotes, anchors=anchors, scales=scales):
     target =  BuildTarget(
-        cat_map, anchors, annotes, scales, image_size[-1], image_size[-2]
-    ).build_target(return_target=True, is_model_pred=True)
+        cat_map, anchors, scales, image_size[-1], image_size[-2]
+    ).build_target(annotes, return_target=True, is_model_pred=True)
     return target
 
 t_dataset = Dataset(

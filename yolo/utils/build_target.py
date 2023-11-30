@@ -19,10 +19,9 @@ class BuildTarget:
         the annotation. The bbox is of the form [x, y, w, h].
     """
     
-    def __init__(self, category_mapper, anchors, annotes, scales, img_w, img_h):
+    def __init__(self, category_mapper, anchors, scales, img_w, img_h):
         self.category_mapper = category_mapper
         self.category_mapper_inv = {v: k for k, v in category_mapper.items()}
-        self.annotes = annotes
         self.anchors = anchors
         self.full_scale_anchors = scale_anchors(anchors, 1, img_w, img_h)
         self.scales = scales 
@@ -101,7 +100,7 @@ class BuildTarget:
                 self.ignore_keys.append(best_key)
                 self._best_anchor_for_annote(annote, self.ignore_keys)
 
-    def build_target(self, return_target=False, is_model_pred=True):
+    def build_target(self, annotes, return_target=False, is_model_pred=True):
         """
         Loops through all annotations for an image and builds the target.
         The result will be added to self.target.
@@ -124,7 +123,7 @@ class BuildTarget:
 
         """
 
-        for annote in self.annotes:
+        for annote in annotes:
             self._best_anchor_for_annote(annote)
             self.ignore_keys = []
 

@@ -1,13 +1,16 @@
 import torch
 import torch.nn as nn
-from train_model.settings import model_inputs, num_classes, t_annotations
+from train_model.settings import model_inputs, num_classes, t_at
 import os
 import matplotlib.pyplot as plt
 from model import YoloV3, YoloV3Loss
-from utils import scale_anchors
+from utils import scale_anchors, BuildTarget
 
 scales = model_inputs['scales']
 anchors = model_inputs['anchors']
+cat_map = t_at.cat_mapper
+
+bt = BuildTarget(cat_map, anchors, scales, 640, 512)
 
 yoloV3 = YoloV3(1, scales, num_classes)
 
@@ -40,16 +43,6 @@ for scale_id, (p, t) in enumerate(zip(pred, target)):
 for k in loss:
     print(k, loss[k])
 
-tup = target
-p_thresh = [.9, .9, .9]
-iou_thresh = [.9, .9, .9]
-count = 0
-for scale_id, (t, pt, it) in enumerate(zip(tup, p_thresh, iou_thresh)):
-    dims = list(zip(*torch.where(t[..., 4:5] > p_thresh[scale_id])[:-1]))
-    for dim in dims:
-        print(dim)
-        count += 1
-print(count)
+len(bt.decode_tuple(target, .8, 1, False))
 
-
-
+len(bt.decode_tuple(pred, .75, 1, True))
