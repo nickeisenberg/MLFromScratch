@@ -10,7 +10,6 @@ from torchvision.transforms import v2
 from model import YoloV3, YoloV3Loss
 from utils import Dataset, BuildTarget, AnnotationTransformer
 
-
 #------------------------------------------------------------------------------
 # Set the path to the data
 #------------------------------------------------------------------------------
@@ -48,12 +47,13 @@ instructions = {
     'stroller': 'ignore',
     'scooter': 'ignore',
 }
+
 t_at = AnnotationTransformer(t_annotations, instructions=instructions)
 
 v_at = AnnotationTransformer(v_annotations, instructions=instructions)
 
 t_annotations = t_at.annotations
-v_annotations = t_at.annotations
+v_annotations = v_at.annotations
 
 cat_map = t_at.cat_mapper
 
@@ -115,7 +115,7 @@ t_dataset = Dataset(
 )
 
 v_dataset = Dataset(
-    annot_json=t_annotations,
+    annot_json=v_annotations,
     annot_image_key='images', 
     annot_bbox_key='annotations', 
     image_file_name='file_name', 
@@ -125,7 +125,7 @@ v_dataset = Dataset(
     bbox_category_id='category_id', 
     img_transform=img_transform,
     target_transform=target_transform,
-    fix_file_path=trainroot
+    fix_file_path=valroot
 )
 
 batch_size = 24

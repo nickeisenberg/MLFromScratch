@@ -24,7 +24,6 @@ yoloV3model.fit(
     save_val_loss_csv_to=save_val_loss_csv_to,
 )
 
-
 img, tar = model_inputs["t_dataset"][0]
 
 img = img.unsqueeze(0).to("cuda")
