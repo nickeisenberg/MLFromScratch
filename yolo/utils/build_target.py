@@ -21,6 +21,7 @@ class BuildTarget:
     
     def __init__(self, category_mapper, anchors, annotes, scales, img_w, img_h):
         self.category_mapper = category_mapper
+        self.category_mapper_inv = {v: k for k, v in category_mapper.items()}
         self.annotes = annotes
         self.anchors = anchors
         self.full_scale_anchors = scale_anchors(anchors, 1, img_w, img_h)
@@ -149,3 +150,52 @@ class BuildTarget:
 
         else:
             return None
+
+    def decode_tuple(self, tup, p_thresh, iou_thresh, is_pred):
+        if not is_pred:
+            iou_thresh = 1
+
+        all = []
+        for scale_id, t in enumerate(tup):
+            _all = []
+            scale = self.scales[scale_id]
+            scaled_ancs = scale_anchors(
+                self.anchors[3 * scale_id: 3 * (scale_id + 1)], scale, 640, 512
+            )
+            dims = list(zip(*torch.where(t[..., 4:5] > p_thresh)[:-1]))
+            for dim in dims:
+                if is_pred:
+                    x, y, w, h, p = t[dim][: 5]
+                    cat = torch.argmax(t[dim][:5])
+                    x, y = (x + dim[2].item()) * scale, (y + dim[1].item()) * scale
+                    w = torch.exp(w) * scaled_ancs[dim[0]][0] 
+                    h = torch.exp(h) * scaled_ancs[dim[0]][0] 
+                    cat = self.category_mapper_inv[cat.item()]
+                else:
+                    x, y, w, h, p, cat = t[dim]
+                    x, y = (x + dim[2].item()) * scale, (y + dim[1].item()) * scale
+                    w = w * scale
+                    h = h * scale
+                    cat = self.category_mapper_inv[cat.item()]
+                _all.append(
+                    {
+                        'bbox': [x.item(), y.item(), w.item(), h.item()], 
+                        'category_id': cat,
+                        'p_score': p.item(),
+                        'index': dim
+                    }
+                )
+            all += _all
+        
+        sorted_all = sorted(all, key=lambda x: x['p_score'], reverse=True)
+    
+        keep = []
+        while sorted_all:
+            keep.append(sorted_all[0])
+            _ = sorted_all.pop(0)
+            for i, info in enumerate(sorted_all):
+                score = iou(torch.tensor(keep[-1]['bbox']), torch.tensor(info['bbox']))
+                if score > iou_thresh:
+                    sorted_all.pop(i)
+    
+        return keep
