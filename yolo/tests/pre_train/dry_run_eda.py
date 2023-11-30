@@ -70,3 +70,32 @@ for scale_id, (t, p) in enumerate(zip(tar, pred)):
             print(p_bbox)
             print(t_bbox)
             print("")
+
+
+#--------------------------------------------------
+# view the losses
+#--------------------------------------------------
+loss_keys = [
+    "box_loss",
+    "object_loss",
+    "no_object_loss",
+    "class_loss",
+    "total_loss"
+]
+
+stacked_losses = {}
+for key in loss_keys:
+    stacked_losses[key] = np.hstack([
+        np.mean(yoloV3model.history[key][epoch])
+        for epoch in range(1, len(yoloV3model.history[key]) + 1)
+    ])
+
+trainlossfig, ax = plt.subplots(1, 5, figsize=(12, 5))
+for i in range(len(ax)):
+    ax[i].plot(stacked_losses[loss_keys[i]])
+    ax[i].set_title(f"{loss_keys[i]}")
+
+vallossfig, ax = plt.subplots(1, 5, figsize=(12, 5))
+for i in range(len(ax)):
+    ax[i].plot(yoloV3model.val_history[loss_keys[i]])
+    ax[i].set_title(f"{loss_keys[i]}")
