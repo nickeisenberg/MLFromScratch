@@ -1,11 +1,6 @@
 from train_model.settings import model_inputs
 from model import Model
-import matplotlib.pyplot as plt
-import numpy as np
-from sshtools.plotting import Plotter
-from sshtools.transfer import scp
 import os
-import torch
 
 yoloV3model = Model(**model_inputs)
 
