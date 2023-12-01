@@ -15,4 +15,4 @@ ip = "174.72.155.21"
 port = "2201"
 
 for file in files_to_move:
-    scp(
+    scp(src_root + file, dst_root + file, user, ip, port)
