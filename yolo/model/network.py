@@ -13,6 +13,7 @@ class Model:
         model: nn.Module | NoneType = None,
         loss_fn: nn.Module | NoneType = None, 
         optimizer: Optimizer | NoneType = None, 
+        scheduler=None,
         t_dataset: Dataset | NoneType = None,
         v_dataset: Dataset | NoneType = None,
         batch_size: int | NoneType = None,
@@ -25,6 +26,7 @@ class Model:
         if isinstance(loss_fn, nn.Module):
             self.loss_fn = loss_fn
         self.optimizer = optimizer
+        self.scheduler = scheduler 
         self.t_dataset = t_dataset
         self.v_dataset = v_dataset
         if self.t_dataset is not None:
@@ -164,6 +166,9 @@ class Model:
             batch_loss.backward()
 
             self.optimizer.step()
+    
+        if self.scheduler:
+            self.scheduler.step()
         
         avg_epoch_loss = np.mean(self.history['total_loss'][epoch])
         print(f"EPOCH {epoch} AVG LOSS {np.round(avg_epoch_loss, 3)}")

@@ -6,8 +6,9 @@ from typing import Tuple
 class YoloV3Loss(nn.Module):
     def __init__(self, device):
         super().__init__()
-        self.mse = nn.MSELoss() 
-        self.bce = nn.BCELoss() 
+        self.mse_obj = nn.MSELoss(reduction='mean') 
+        self.mse_box = nn.MSELoss(reduction='sum') 
+        self.bce = nn.BCELoss(reduction='sum') 
         self.cross_entropy = nn.CrossEntropyLoss() 
         self.sigmoid = nn.Sigmoid() 
         self.device = device
@@ -49,7 +50,7 @@ class YoloV3Loss(nn.Module):
 
             ious = iou(box_preds[obj], target[..., 0: 4][obj]).detach() 
             
-            object_loss = self.mse(
+            object_loss = self.mse_obj(
                 pred[..., 4: 5][obj], 
                 ious * target[..., 4: 5][obj]
             ) 
@@ -57,7 +58,7 @@ class YoloV3Loss(nn.Module):
             # Calculating box coordinate loss
             target[..., 2: 4] = torch.log(1e-6 + target[..., 2: 4] / scaled_anchors) 
 
-            box_loss = self.mse(
+            box_loss = self.mse_box(
                 pred[..., 0: 4][obj], 
                 target[..., 0: 4][obj]
             )

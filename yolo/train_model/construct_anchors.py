@@ -1,16 +1,10 @@
 import os
 import json
 from utils import ConstructAnchors
+from train_model.settings import t_at
 
-trainroot = os.path.join(
-    os.environ['HOME'], 'Datasets', 'flir', 'images_thermal_train'
-)
-annote_file_path = os.path.join(
-    trainroot , 'coco.json'
-)
-
-with open(annote_file_path, 'r') as oj:
-    annotations = json.load(oj)
+annotations = t_at.annotations
 
 construct_anchors = ConstructAnchors(annotations['annotations'], 640, 512)
+
 print(construct_anchors.cluster_centers[:, 1:])
