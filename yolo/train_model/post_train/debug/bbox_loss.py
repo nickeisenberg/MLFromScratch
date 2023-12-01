@@ -56,7 +56,51 @@ no_obj = target[..., 4] == 0
 tar_dims = list(zip(*torch.where(obj == True)))
 pred_dims = list(zip(*torch.where(pred[..., 4:5] > .65)[:-1]))
 
-for td in tar_dims:
-    pred[td][4]
+len(tar_dims)
+len(pred_dims)
+
+pred[0].shape
+
+
+p_thresh = .65
+is_pred=True
+all = {0: [], 1: [], 2: []}
+for scale_id, t in enumerate(pred):
+    t = t[0]
+    _all = []
+    scale = scales[scale_id]
+    scaled_ancs = scale_anchors(
+        anchors[3 * scale_id: 3 * (scale_id + 1)], scale, 640, 512
+    )
+    dims = list(zip(*torch.where(t[..., 4:5] > p_thresh)[:-1]))
+    for dim in dims:
+        if is_pred:
+            x, y, w, h, p = t[dim][: 5]
+            x, y = (x + dim[2].item()) * scale, (y + dim[1].item()) * scale
+            w = torch.exp(w) * scaled_ancs[dim[0]][0] * scale 
+            h = torch.exp(h) * scaled_ancs[dim[0]][1] * scale
+        else:
+            x, y, w, h, p, cat = t[dim]
+            x, y = (x + dim[2].item()) * scale, (y + dim[1].item()) * scale
+            w = w * scale
+            h = h * scale
+        all[scale_id].append(
+            {
+                'bbox': [x.item(), y.item(), w.item(), h.item()], 
+                'p_score': p.item(),
+                'index': dim
+            }
+        )
+
+for dic in all[1]:
+    t_bbox = target[1][0][dic['index']][:4]
+    print(' ')
+    print(dic['bbox'])
+    print(t_bbox)
+    print(' ')
+
+
+
+
 
 
