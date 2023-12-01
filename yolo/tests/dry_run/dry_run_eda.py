@@ -1,64 +1,41 @@
-from tests.dry_run.dry_run_settings import model_inputs
-from model import Model
+from tests.dry_run.dry_run_settings import t_dataset, t_at, anchors, scales, num_classes
+from model import Model, YoloV3
 import matplotlib.pyplot as plt
-import numpy as np
 import os
-import torch
-from utils import scale_anchors
+from utils import BuildTarget, iou
 import pandas as pd
+import torch
 
-yoloV3model = Model(**model_inputs)
+bt = BuildTarget(t_at.cat_mapper, anchors, scales, 640, 512)
 
-modelroot = f"{os.environ['HOME']}/GitRepos/ml_arcs/yolo/tests/pre_train"
+yoloV3 = YoloV3(1, scales, num_classes)
+
+yoloV3model = Model(model=yoloV3, scales=scales, anchors=anchors)
+
+modelroot = f"{os.environ['HOME']}/GitRepos/ml_arcs/yolo/tests/dry_run"
 save_best_train_to = modelroot + "/state_dicts/yolo_train.pth"
-
 yoloV3model.load_state_dict(save_best_train_to)
 
-img, tar = model_inputs["t_dataset"][0]
-
-img = img.unsqueeze(0).to("cuda")
+img, tar = t_dataset[0]
+img = img.unsqueeze(0)
 
 pred = yoloV3model.model(img)
 
-anchors = torch.tensor(model_inputs['anchors']).to('cuda')
-scales = torch.tensor(model_inputs['scales']).to('cuda')
+pred = [p[0] for p in pred]
 
-for scale_id, (t, p) in enumerate(zip(tar, pred)):
-    t = t.to('cuda')
-    scaled_ancs = scale_anchors(
-        anchors[3 * scale_id: 3 * (scale_id + 1)], 
-        scales[scale_id],
-        640, 512, 'cuda'
-    )
-    dims = list(zip(*torch.where(t[..., 4: 5] == 1)[:-1]))
-    if len(dims) > 0:
-        for dim in dims:
-            t_bbox = t[dim][: 5]
-            p_bbox = p[0][dim][: 5]
-            t_bbox[2: 4] = torch.log(1e-6 + t_bbox[2: 4] / scaled_ancs[dim[0]])
-            print("")
-            print(p_bbox)
-            print(t_bbox)
-            print("")
+t_recover = bt.decode_tuple(tar, .5, 1, False)
 
-for scale_id, (t, p) in enumerate(zip(tar, pred)):
-    t = t.to('cuda')
-    scaled_ancs = scale_anchors(
-        anchors[3 * scale_id: 3 * (scale_id + 1)], 
-        scales[scale_id],
-        640, 512, 'cuda'
-    )
-    dims = list(zip(*torch.where(t[..., 4: 5] == 1)[:-1]))
-    if len(dims) > 0:
-        for dim in dims:
-            t_bbox = t[dim][: 5]
-            p_bbox = p[0][dim][: 5].to('cuda')
-            p_bbox[2: 4] = torch.exp(p_bbox[2: 4]) * scaled_ancs[dim[0]]
-            print("")
-            print(p_bbox)
-            print(t_bbox)
-            print("")
+p_recover = bt.decode_tuple(pred, .8, .001, True)
+len(p_recover)
 
+for p in p_recover:
+    p_bbox = torch.tensor(p['bbox'])
+    for pp in p_recover:
+        pp_bbox = torch.tensor(pp['bbox'])
+        score = iou(p_bbox, pp_bbox)
+        if score > 0 and score < .99:
+            print(score)
+        
 #--------------------------------------------------
 # view the losses
 #--------------------------------------------------
