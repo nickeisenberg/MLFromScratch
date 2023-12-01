@@ -168,7 +168,7 @@ class BuildTarget:
                     cat = torch.argmax(t[dim][:5])
                     x, y = (x + dim[2].item()) * scale, (y + dim[1].item()) * scale
                     w = torch.exp(w) * scaled_ancs[dim[0]][0] 
-                    h = torch.exp(h) * scaled_ancs[dim[0]][0] 
+                    h = torch.exp(h) * scaled_ancs[dim[0]][1] 
                     cat = self.category_mapper_inv[cat.item()]
                 else:
                     x, y, w, h, p, cat = t[dim]

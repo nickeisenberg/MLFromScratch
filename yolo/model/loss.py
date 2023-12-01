@@ -7,7 +7,7 @@ class YoloV3Loss(nn.Module):
     def __init__(self, device):
         super().__init__()
         self.mse = nn.MSELoss() 
-        self.bce = nn.BCEWithLogitsLoss() 
+        self.bce = nn.BCELoss() 
         self.cross_entropy = nn.CrossEntropyLoss() 
         self.sigmoid = nn.Sigmoid() 
         self.device = device
@@ -38,8 +38,6 @@ class YoloV3Loss(nn.Module):
         )
 
         if obj.sum() > 0:
-            # pred[..., 0: 2] = self.sigmoid(pred[..., 0: 2])
-            target[..., 2: 4] = torch.log(1e-6 + target[..., 2: 4] / scaled_anchors) 
 
             box_preds = torch.cat(
                 [
@@ -52,12 +50,13 @@ class YoloV3Loss(nn.Module):
             ious = iou(box_preds[obj], target[..., 0: 4][obj]).detach() 
             
             object_loss = self.mse(
-                # self.sigmoid(pred[..., 4: 5][obj]), 
                 pred[..., 4: 5][obj], 
                 ious * target[..., 4: 5][obj]
             ) 
 
-            # Calculating box coordinate loss 
+            # Calculating box coordinate loss
+            target[..., 2: 4] = torch.log(1e-6 + target[..., 2: 4] / scaled_anchors) 
+
             box_loss = self.mse(
                 pred[..., 0: 4][obj], 
                 target[..., 0: 4][obj]
