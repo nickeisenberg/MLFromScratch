@@ -87,3 +87,12 @@ iou(
 
 
 b1.repeat((1, 3, 16, 20, 1)).shape
+
+
+#--------------------------------------------------
+# Big box in little box test
+#--------------------------------------------------
+b1 = torch.Tensor([2, 2, 50, 50])
+b2 = torch.Tensor([3, 3, 6, 1])
+
+iou(b1, b2, share_center=False)

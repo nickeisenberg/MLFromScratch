@@ -197,4 +197,4 @@ class BuildTarget:
                 if score > iou_thresh:
                     sorted_all.pop(i)
     
-        return keep
+        return keep, all

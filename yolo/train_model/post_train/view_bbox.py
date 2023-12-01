@@ -28,7 +28,6 @@ modelroot = f"{os.environ['HOME']}/GitRepos/ml_arcs/yolo/train_model"
 train_pth_path = modelroot + "/state_dicts/yolo_train1.pth"
 
 yoloV3.load_state_dict(torch.load(train_pth_path))
-
 #--------------------------------------------------
 
 #--------------------------------------------------
@@ -47,9 +46,10 @@ target = [t[0] for t in target]
 pred = [p[0] for p in pred]
 image = image[0]
 
-target_bbox = bt.decode_tuple(target, .8, 1, False)
-pred_bbox = bt.decode_tuple(pred, .75, .8, True)
+target_bbox = bt.decode_tuple(target, .8, 1, False)[0]
+pred_bbox = bt.decode_tuple(pred, .6, 1, True)[1]
 #--------------------------------------------------
+
 
 #--------------------------------------------------
 # Plot the bounding boxes
