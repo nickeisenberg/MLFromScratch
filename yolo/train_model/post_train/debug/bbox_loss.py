@@ -7,6 +7,7 @@ wrong because the bounding boxes are so far off from their actual target.
 """
 
 import torch
+import torch.nn as nn
 from train_model.settings import model_inputs, num_classes, t_at
 import os
 from model import YoloV3
@@ -35,72 +36,57 @@ yoloV3.load_state_dict(torch.load(train_pth_path))
 # Get a training image and target and prediction
 #--------------------------------------------------
 image, target = model_inputs['t_dataset'][0]
+
 image = image.unsqueeze(0)
-target = [t.unsqueeze(0) for t in target]
 pred = [p.detach() for p in yoloV3(image)]
+target = [t.unsqueeze(0) for t in target]
+
+mse_s = nn.MSELoss(reduction="sum") 
+mse_m = nn.MSELoss(reduction="mean") 
+bce_s = nn.BCELoss(reduction='sum') 
+bce_m = nn.BCELoss(reduction='mean') 
 
 _target, _pred = deepcopy(target), deepcopy(pred)
 
+
 scale_id = 1
-scale = scales[scale_id]
+
 target, pred = _target[scale_id], _pred[scale_id]
+
+scale = scales[scale_id]
 scaled_anchors = scale_anchors(
     anchors[scale_id * 3: (scale_id + 1) * 3], 
     scale, 
     640, 512
 )
+scaled_anchors = scaled_anchors.reshape((1, 3, 1, 1, 2))
+
 
 obj = target[..., 4] == 1
 no_obj = target[..., 4] == 0
 
-tar_dims = list(zip(*torch.where(obj == True)))
-pred_dims = list(zip(*torch.where(pred[..., 4:5] > .65)[:-1]))
+bce_m( 
+    (pred[..., 4:5][no_obj]), (target[..., 4:5][no_obj]), 
+)
 
-len(tar_dims)
-len(pred_dims)
+box_preds = torch.cat(
+    [
+        pred[..., 0: 2], 
+        torch.exp(pred[..., 2: 4]) * scaled_anchors
+    ],
+    dim=-1
+) 
 
-pred[0].shape
+ious = iou(box_preds[obj], target[..., 0: 4][obj]).detach() 
 
+mse_s(
+    pred[..., 4: 5][obj], 
+    ious * target[..., 4: 5][obj]
+) 
 
-p_thresh = .65
-is_pred=True
-all = {0: [], 1: [], 2: []}
-for scale_id, t in enumerate(pred):
-    t = t[0]
-    _all = []
-    scale = scales[scale_id]
-    scaled_ancs = scale_anchors(
-        anchors[3 * scale_id: 3 * (scale_id + 1)], scale, 640, 512
-    )
-    dims = list(zip(*torch.where(t[..., 4:5] > p_thresh)[:-1]))
-    for dim in dims:
-        if is_pred:
-            x, y, w, h, p = t[dim][: 5]
-            x, y = (x + dim[2].item()) * scale, (y + dim[1].item()) * scale
-            w = torch.exp(w) * scaled_ancs[dim[0]][0] * scale 
-            h = torch.exp(h) * scaled_ancs[dim[0]][1] * scale
-        else:
-            x, y, w, h, p, cat = t[dim]
-            x, y = (x + dim[2].item()) * scale, (y + dim[1].item()) * scale
-            w = w * scale
-            h = h * scale
-        all[scale_id].append(
-            {
-                'bbox': [x.item(), y.item(), w.item(), h.item()], 
-                'p_score': p.item(),
-                'index': dim
-            }
-        )
+target[..., 2: 4] = torch.log(1e-6 + target[..., 2: 4] / scaled_anchors) 
 
-for dic in all[1]:
-    t_bbox = target[1][0][dic['index']][:4]
-    print(' ')
-    print(dic['bbox'])
-    print(t_bbox)
-    print(' ')
-
-
-
-
-
-
+mse_s(
+    pred[..., 0: 4][obj], 
+    target[..., 0: 4][obj]
+)

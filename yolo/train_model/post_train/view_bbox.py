@@ -47,7 +47,7 @@ pred = [p[0] for p in pred]
 image = image[0]
 
 target_bbox = bt.decode_tuple(target, .8, 1, False)[0]
-pred_bbox, pred_bbox_all = bt.decode_tuple(pred, .75, .8, True)
+pred_bbox, pred_bbox_all = bt.decode_tuple(pred, .75, .3, True)
 #--------------------------------------------------
 
 len(target_bbox)
