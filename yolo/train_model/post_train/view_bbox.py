@@ -25,7 +25,7 @@ yoloV3 = YoloV3(1, scales, num_classes)
 # Load model weights
 #--------------------------------------------------
 modelroot = f"{os.environ['HOME']}/GitRepos/ml_arcs/yolo/train_model"
-train_pth_path = modelroot + "/state_dicts/yolo_train0.pth"
+train_pth_path = modelroot + "/state_dicts/yolo_train1.pth"
 
 yoloV3.load_state_dict(torch.load(train_pth_path))
 
@@ -34,7 +34,7 @@ yoloV3.load_state_dict(torch.load(train_pth_path))
 #--------------------------------------------------
 # Get a training image and target and prediction
 #--------------------------------------------------
-image, target = model_inputs['t_dataset'][1]
+image, target = model_inputs['t_dataset'][0]
 image = image.unsqueeze(0)
 target = [t.unsqueeze(0) for t in target]
 pred = [p for p in yoloV3(image)]
@@ -55,7 +55,7 @@ pred_bbox = bt.decode_tuple(pred, .75, .8, True)
 # Plot the bounding boxes
 #--------------------------------------------------
 
-which_bbox = target_bbox
+which_bbox = pred_bbox
 which_image = image
 
 image_pil = ToPILImage()(which_image)
