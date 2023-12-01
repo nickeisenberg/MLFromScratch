@@ -139,7 +139,7 @@ yoloV3 = YoloV3(image_size[0], scales, num_classes).to(device)
 loss_fn = YoloV3Loss(device=device)
 optimizer = Adam(yoloV3.parameters(), lr=.001)
 
-lambda_function = lambda epoch: 0.001 if epoch <= 5 else (0.0001 if epoch <= 10 else 0.00001)
+lambda_function = lambda epoch: 0.001 if epoch < 5 else (0.0001 if epoch < 10 else 0.00001)
 scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda_function)
 
 #------------------------------------------------------------------------------
