@@ -1,4 +1,5 @@
 import torch
+from torch.nn import Sigmoid
 from .iou import iou
 from .scale_anchors import scale_anchors
 
@@ -32,6 +33,7 @@ class BuildTarget:
             torch.zeros((3, 32, 40, 6)),
             torch.zeros((3, 64, 80, 6))
         )
+        self.sigmoid = Sigmoid()
 
     def _best_anchor_for_annote(
             self, annote, ignore_keys=[], by_center=False
@@ -164,8 +166,11 @@ class BuildTarget:
             dims = list(zip(*torch.where(t[..., 4:5] > p_thresh)[:-1]))
             for dim in dims:
                 if is_pred:
-                    x, y, w, h, p = t[dim][: 5]
-                    cat = torch.argmax(t[dim][:5])
+                    bbox_info = t[dim][: 5]
+                    bbox_info[:2] = self.sigmoid(bbox_info[:2])
+                    bbox_info[4] = self.sigmoid(bbox_info[4])
+                    x, y, w, h, p = bbox_info
+                    cat = torch.argmax(t[dim][5:])
                     x, y = (x + dim[2].item()) * scale, (y + dim[1].item()) * scale
                     w = torch.exp(w) * scaled_ancs[dim[0]][0] * scale
                     h = torch.exp(h) * scaled_ancs[dim[0]][1] * scale

@@ -21,6 +21,9 @@ img = img.unsqueeze(0)
 
 pred = yoloV3model.model(img)
 
+for p in pred:
+    print(p.shape)
+
 pred = [p[0] for p in pred]
 
 t_recover = bt.decode_tuple(tar, .5, 1, False)
