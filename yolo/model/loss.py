@@ -7,7 +7,7 @@ class YoloV3Loss(nn.Module):
     def __init__(self, device):
         super().__init__()
         self.mse = nn.MSELoss(reduction='mean') 
-        self.bce = nn.BCELoss(reduction='mean') 
+        self.bce = nn.BCEWithLogitsLoss(reduction='mean') 
         self.cross_entropy = nn.CrossEntropyLoss() 
         self.sigmoid = nn.Sigmoid() 
         self.device = device

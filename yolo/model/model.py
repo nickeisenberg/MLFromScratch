@@ -47,7 +47,7 @@ class ScalePredictionBlock(nn.Module):
         )
         self.pred = nn.Sequential(
             ConvBlock(out_channels // 2, out_channels, kernel_size=3, stride=1, padding=1), 
-            nn.Conv2d(out_channels, (num_classes + 5) * 3, kernel_size=1)
+            nn.Conv2d(out_channels, (num_classes + 5) * 3, kernel_size=1, bias=True)
         )
         self.num_classes = num_classes
         self.sigmoid = nn.Sigmoid()
