@@ -5,10 +5,10 @@ import os
 yoloV3model = Model(**model_inputs)
 
 modelroot = f"{os.environ['HOME']}/GitRepos/ml_arcs/yolo/train_model"
-save_best_train_to = modelroot + "/state_dicts/yolo_train2.pth"
-save_best_val_to = modelroot + "/state_dicts/yolo_val2.pth"
-save_train_loss_csv_to = modelroot + "/lossdfs/train2.csv"
-save_val_loss_csv_to = modelroot + "/lossdfs/val2.csv"
+save_best_train_to = modelroot + "/state_dicts/yolo_train3.pth"
+save_best_val_to = modelroot + "/state_dicts/yolo_val3.pth"
+save_train_loss_csv_to = modelroot + "/lossdfs/train3.csv"
+save_val_loss_csv_to = modelroot + "/lossdfs/val3.csv"
 epochs = 100
 
 yoloV3model.fit(
