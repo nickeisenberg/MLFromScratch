@@ -1,3 +1,4 @@
+from functools import reduce
 import torch
 import torch.nn as nn
 
@@ -36,13 +37,13 @@ class ResBlock(nn.Module):
                 x = layer(x)
         return x
 
-
 class ScalePredictionBlock(nn.Module):
     def __init__(self, in_channels, out_channels, num_classes):
         super().__init__()
         self.pre_pred = nn.Sequential(
             ConvBlock(in_channels, out_channels // 2, kernel_size=1, stride=1, padding=0), 
             ConvBlock(out_channels // 2, out_channels, kernel_size=3, stride=1, padding=1), 
+            ResBlock(out_channels, use_residual=False, num_repeats=1), 
             ConvBlock(out_channels, out_channels // 2, kernel_size=1, stride=1, padding=0), 
         )
         self.pred = nn.Sequential(
@@ -79,11 +80,10 @@ class Concatenater(nn.Module):
         return torch.cat((up, x[1]), dim=1)
 
 class YoloV3(nn.Module):
-    def __init__(self, img_channels, scales, num_classes):
+    def __init__(self, img_channels, num_classes):
         super().__init__()
         
         self.img_channels = img_channels
-        self.scales = scales
         self.num_classes = num_classes
         
         self.block0 = nn.Sequential(
@@ -132,3 +132,20 @@ class YoloV3(nn.Module):
         pp2, p2 = self.pred2((pp1, scale2))
         _, p3 = self.pred3((pp2, scale3))
         return (p1, p2, p3)
+
+if __name__ == "__main__":
+    num_classes = 20
+    IMAGE_WIDTH = 640
+    IMAGE_HEIGHT = 512
+    model = YoloV3(img_channels=1, num_classes=num_classes)
+    x = torch.randn((2, 1, IMAGE_HEIGHT, IMAGE_WIDTH))
+    out = model(x)
+    assert model(x)[0].shape == (2, 3, IMAGE_HEIGHT//32, IMAGE_WIDTH//32, num_classes + 5)
+    assert model(x)[1].shape == (2, 3, IMAGE_HEIGHT//16, IMAGE_WIDTH//16, num_classes + 5)
+    assert model(x)[2].shape == (2, 3, IMAGE_HEIGHT//8, IMAGE_WIDTH//8, num_classes + 5)
+    print("Success!")
+    params = 0
+    for p in model.parameters():
+        params += reduce(lambda x, y: x * y, p.shape)
+    print(f"The model has {params / 1e6} million parameters")
+

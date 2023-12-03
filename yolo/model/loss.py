@@ -56,7 +56,7 @@ class YoloV3Loss(nn.Module):
 
             # Calculating box coordinate loss
             target[..., 2: 4] = torch.log(1e-6 + target[..., 2: 4] / scaled_anchors) 
-            pred[..., 0: 2][obj] = self.sigmoid(pred[..., 0: 2])
+            pred[..., 0: 2] = self.sigmoid(pred[..., 0: 2])
 
             box_loss = self.mse(
                 pred[..., 0: 4][obj], 

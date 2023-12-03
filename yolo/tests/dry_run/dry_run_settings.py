@@ -139,7 +139,7 @@ notify_after = 20
 #------------------------------------------------------------------------------
 # Instantiate the model, set the loss and set the optimizer
 #------------------------------------------------------------------------------
-yoloV3 = YoloV3(image_size[0], scales, num_classes).to(device)
+yoloV3 = YoloV3(image_size[0], num_classes).to(device)
 loss_fn = YoloV3Loss(device=device)
 optimizer = Adam(yoloV3.parameters(), lr=.001)
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.1)

@@ -7,8 +7,7 @@ import pandas as pd
 import torch
 
 bt = BuildTarget(t_at.cat_mapper, anchors, scales, 640, 512)
-
-yoloV3 = YoloV3(1, scales, num_classes)
+yoloV3 = YoloV3(1, num_classes)
 
 yoloV3model = Model(model=yoloV3, scales=scales, anchors=anchors)
 
@@ -16,37 +15,38 @@ modelroot = f"{os.environ['HOME']}/GitRepos/ml_arcs/yolo/tests/dry_run"
 save_best_train_to = modelroot + "/state_dicts/yolo_train.pth"
 yoloV3model.load_state_dict(save_best_train_to)
 
+#--------------------------------------------------
+# load image
+#--------------------------------------------------
 img, tar = t_dataset[0]
 img = img.unsqueeze(0)
 
+#--------------------------------------------------
+# make prediction
+#--------------------------------------------------
 pred = yoloV3model.model(img)
-
-for p in pred:
-    print(p.shape)
 
 pred = [p[0] for p in pred]
 
+#--------------------------------------------------
+# use the decoder
+#--------------------------------------------------
 t_recover = bt.decode_tuple(tar, .5, 1, False)
 
 p_recover = bt.decode_tuple(pred, .8, .001, True)
-len(p_recover)
-
-for p in p_recover:
-    p_bbox = torch.tensor(p['bbox'])
-    for pp in p_recover:
-        pp_bbox = torch.tensor(pp['bbox'])
-        score = iou(p_bbox, pp_bbox)
-        if score > 0 and score < .99:
-            print(score)
         
 #--------------------------------------------------
 # view the losses
 #--------------------------------------------------
 
-train_loss = pd.read_csv(save_train_loss_csv_to, index_col=0)
-val_loss = pd.read_csv(save_val_loss_csv_to, index_col=0)
+train_path = "/home/nicholas/GitRepos/ml_arcs/yolo/tests/dry_run/lossdfs/train.csv"
+val_path = "/home/nicholas/GitRepos/ml_arcs/yolo/tests/dry_run/lossdfs/val.csv"
 
-train_loss['total_loss']
+train_loss = pd.read_csv(train_path, index_col=0)
+val_loss = pd.read_csv(val_path, index_col=0)
 
-plt.plot(train_loss['total_loss'])
+fig, ax = plt.subplots(1, 5, figsize=(12, 5))
+for i, col in enumerate(train_loss.columns):
+    ax[i].plot(train_loss[col])
+    ax[i].set_title(col)
 plt.show()
