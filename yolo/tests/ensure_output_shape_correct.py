@@ -5,6 +5,7 @@ https://www.geeksforgeeks.org/yolov3-from-scratch-using-pytorch/
 https://medium.com/analytics-vidhya/object-detection-state-of-the-art-yolo-v3-79ad2937832
 """
 
+from functools import reduce
 import torch
 from model import *
 
@@ -24,10 +25,15 @@ anchors = torch.tensor([
 ]).reshape((-1, 2))
 anchors
 
-yoloV3 = YoloV3((1, 512, 640), [32, 16, 8], 80)
+yoloV3 = YoloV3(1, [32, 16, 8], 80)
 
 for t in yoloV3(input):
     print(t.shape)
+
+params = 0
+for p in yoloV3.parameters():
+    params += reduce(lambda x, y: x * y, p.shape)
+print(params / 1e6)
 
 #--------------------------------------------------
 
