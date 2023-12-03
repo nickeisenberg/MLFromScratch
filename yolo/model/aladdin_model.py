@@ -88,7 +88,7 @@ class ScalePrediction(nn.Module):
         )
 
 
-class YOLOv3(nn.Module):
+class AladdenYOLOv3(nn.Module):
     def __init__(self, in_channels=3, num_classes=80):
         super().__init__()
         self.num_classes = num_classes
@@ -150,7 +150,6 @@ class YOLOv3(nn.Module):
                     in_channels = in_channels * 3
 
         return layers
-
 
 if __name__ == "__main__":
     num_classes = 20
