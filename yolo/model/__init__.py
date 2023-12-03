@@ -1,5 +1,5 @@
 from .model import (
-    ConvBlock, ResBlock, Concatenater, ScalePredictionBlock, YoloV3
+    ConvBlock, ResBlock, Concatenater, ScalePredictionBlock, YOLOv3
 )
 from .aladdin_model import AladdenYOLOv3
 from .geeks_model import GeeksYOLOv3

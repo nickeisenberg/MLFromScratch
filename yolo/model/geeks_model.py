@@ -143,7 +143,7 @@ if __name__ == "__main__":
     num_classes = 20
     IMAGE_SIZE = 416
     # Creating model and testing output shapes 
-    model = YOLOv3(num_classes=num_classes) 
+    model = GeeksYOLOv3(num_classes=num_classes) 
     x = torch.randn((1, 3, IMAGE_SIZE, IMAGE_SIZE)) 
     out = model(x) 
     print(out[0].shape) 

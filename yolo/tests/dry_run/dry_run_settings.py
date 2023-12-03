@@ -7,7 +7,7 @@ import torch
 from torch.optim import Adam
 from torch.utils.data.dataset import Subset, random_split
 from torchvision.transforms import v2
-from model import YoloV3, YoloV3Loss
+from model import YOLOv3, YoloV3Loss
 from utils import Dataset, BuildTarget, AnnotationTransformer
 
 
@@ -129,17 +129,17 @@ v_dataset = Dataset(
     fix_file_path=valroot
 )
 
-t_dataset = Subset(t_dataset, range(200))
-v_dataset = Subset(v_dataset, range(200))
+t_dataset = Subset(t_dataset, range(6))
+v_dataset = Subset(v_dataset, range(6))
 
-batch_size = 4
+batch_size = 2
 
-notify_after = 20
+notify_after = 1
 
 #------------------------------------------------------------------------------
 # Instantiate the model, set the loss and set the optimizer
 #------------------------------------------------------------------------------
-yoloV3 = YoloV3(image_size[0], num_classes).to(device)
+yoloV3 = YOLOv3(image_size[0], num_classes).to(device)
 loss_fn = YoloV3Loss(device=device)
 optimizer = Adam(yoloV3.parameters(), lr=.001)
 scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.1)

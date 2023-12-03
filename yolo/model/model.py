@@ -57,8 +57,9 @@ class ScalePredictionBlock(nn.Module):
         pre_pred = self.pre_pred(x)
         pred = self.pred(pre_pred)
         pred = pred.view(
-            x.shape[0], 3, x.shape[2], x.shape[3], self.num_classes + 5
+            x.shape[0], 3, self.num_classes + 5, x.shape[2], x.shape[3]
         )
+        pred = pred.permute(0, 1, 3, 4, 2)
         return pre_pred, pred
 
 class Concatenater(nn.Module):
@@ -133,30 +134,13 @@ class YOLOv3(nn.Module):
         _, p3 = self.pred3((pp2, scale3))
         return (p1, p2, p3)
 
-    num_classes = 20
-    IMAGE_WIDTH = 640
-    IMAGE_HEIGHT = 512
-    model = YoloV3(img_channels=1, num_classes=num_classes)
-    x = torch.randn((2, 1, IMAGE_HEIGHT, IMAGE_WIDTH))
-    out = model(x)
-    assert model(x)[0].shape == (2, 3, IMAGE_HEIGHT//32, IMAGE_WIDTH//32, num_classes + 5)
-    assert model(x)[1].shape == (2, 3, IMAGE_HEIGHT//16, IMAGE_WIDTH//16, num_classes + 5)
-    assert model(x)[2].shape == (2, 3, IMAGE_HEIGHT//8, IMAGE_WIDTH//8, num_classes + 5)
-    print(out[0].shape)
-    print(out[1].shape)
-    print(out[2].shape)
-    print("Success!")
-    params = 0
-    for p in model.parameters():
-        params += reduce(lambda x, y: x * y, p.shape)
-    print(f"The model has {params / 1e6} million parameters")
 
 if __name__ == "__main__":
     num_classes = 20
     IMAGE_SIZE = 416
     # Creating model and testing output shapes 
-    model = YOLOv3(img_channels=1, num_classes=num_classes) 
-    x = torch.randn((1, 1, IMAGE_SIZE, IMAGE_SIZE)) 
+    model = YOLOv3(img_channels=3, num_classes=num_classes) 
+    x = torch.randn((1, 3, IMAGE_SIZE, IMAGE_SIZE)) 
     out = model(x) 
     print(out[0].shape) 
     print(out[1].shape) 
