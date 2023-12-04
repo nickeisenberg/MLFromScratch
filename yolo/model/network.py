@@ -139,7 +139,6 @@ class Model:
 
         p_bar = tqdm(self.t_dataloader, leave=True)
 
-        # for batch_num, (images, targets) in enumerate(self.t_dataloader):
         for batch_num, (images, targets) in enumerate(p_bar):
 
             images = images.to(self.device)
@@ -151,13 +150,6 @@ class Model:
                 
                 batch_loss = torch.zeros(1, requires_grad=True).to(self.device)
                 for scale_id, (preds, targs) in enumerate(zip(predicitons, targets)):
-                    
-                    # scaled_anchors = scale_anchors(
-                    #     self.anchors[scale_id * 3: (scale_id + 1) * 3], 
-                    #     self.scales[scale_id],
-                    #     self.img_width, self.img_height,
-                    #     device=self.device
-                    # )
 
                     _batch_loss, batch_history = self.loss_fn(
                         preds,

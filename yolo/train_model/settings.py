@@ -128,7 +128,7 @@ v_dataset = Dataset(
     fix_file_path=valroot
 )
 
-batch_size = 24
+batch_size = 20
 
 notify_after = 40
 
@@ -137,10 +137,8 @@ notify_after = 40
 #------------------------------------------------------------------------------
 yoloV3 = YOLOv3(image_size[0], num_classes).to(device)
 loss_fn = YoloV3Loss(device=device)
-optimizer = Adam(yoloV3.parameters(), lr=.001)
-
-lambda_function = lambda epoch: 0.001 if epoch < 5 else (0.0001 if epoch < 10 else 0.00001)
-scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda_function)
+optimizer = Adam(yoloV3.parameters(), lr=.0001, weight_decay=.00001)
+scaler = torch.cuda.amp.GradScaler()
 
 #------------------------------------------------------------------------------
 # Put all of the model inputs into a dictionary to pass into the model
@@ -149,7 +147,7 @@ model_inputs = {
     "model": yoloV3, 
     "loss_fn": loss_fn, 
     "optimizer": optimizer, 
-    "scheduler": scheduler, 
+    "scaler": scaler, 
     "t_dataset": t_dataset, 
     "v_dataset": v_dataset,
     "batch_size": batch_size, 
