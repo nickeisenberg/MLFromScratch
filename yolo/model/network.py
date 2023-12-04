@@ -1,19 +1,21 @@
 from types import NoneType
 import pandas as pd
 import torch
+from torch.cuda.amp.grad_scaler import GradScaler
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 from torch.optim import Optimizer
 import numpy as np
 from utils import scale_anchors
+from tqdm import tqdm
 
 class Model:
     def __init__(
         self, 
         model: nn.Module | NoneType = None,
         loss_fn: nn.Module | NoneType = None, 
-        optimizer: Optimizer | NoneType = None, 
-        scheduler=None,
+        optimizer: Optimizer | NoneType = None,
+        scaler: GradScaler | NoneType = None,
         t_dataset: Dataset | NoneType = None,
         v_dataset: Dataset | NoneType = None,
         batch_size: int | NoneType = None,
@@ -26,7 +28,7 @@ class Model:
         if isinstance(loss_fn, nn.Module):
             self.loss_fn = loss_fn
         self.optimizer = optimizer
-        self.scheduler = scheduler 
+        self.scaler = scaler
         self.t_dataset = t_dataset
         self.v_dataset = v_dataset
         if self.t_dataset is not None:
@@ -53,10 +55,17 @@ class Model:
             "class_loss": [],
             "total_loss": [],
         }
-        if scales is not None:
+        if scales is not None and anchors is not None:
             self.scales = scales.to(device)
-        if anchors is not None:
             self.anchors = anchors.to(device)
+            self.scaled_anchors = [
+                scale_anchors(
+                    self.anchors[scale_id * 3: (scale_id + 1) * 3], 
+                    self.scales[scale_id],
+                    self.img_width, self.img_height,
+                    device=self.device
+                )
+            for scale_id in self.scales]
         self.notify_after = notify_after
 
     def fit(self, 
@@ -128,51 +137,51 @@ class Model:
         for key in self.history.keys():
             self.history[key][epoch] = []
 
-        for batch_num, (images, targets) in enumerate(self.t_dataloader):
+        p_bar = tqdm(self.t_dataloader, leave=True)
+
+        # for batch_num, (images, targets) in enumerate(self.t_dataloader):
+        for batch_num, (images, targets) in enumerate(p_bar):
 
             images = images.to(self.device)
             targets = [target.to(self.device) for target in targets]
 
-            if (batch_num + 1) % self.notify_after == 0:
+            with torch.cuda.amp.autocast():
 
-                batch_loss = np.round(np.mean(self.history['total_loss'][epoch]), 3)
-                print(f"EPOCH {epoch} BATCH {batch_num + 1} LOSS {batch_loss}")
+                predicitons = self.model(images)
+                
+                batch_loss = torch.zeros(1, requires_grad=True).to(self.device)
+                for scale_id, (preds, targs) in enumerate(zip(predicitons, targets)):
+                    
+                    scaled_anchors = scale_anchors(
+                        self.anchors[scale_id * 3: (scale_id + 1) * 3], 
+                        self.scales[scale_id],
+                        self.img_width, self.img_height,
+                        device=self.device
+                    )
+
+                    _batch_loss, batch_history = self.loss_fn(
+                        preds,
+                        targs,
+                        scaled_anchors
+                    )
+
+                    batch_loss += _batch_loss
+
+                    for key in self.history.keys():
+                        self.history[key][epoch].append(batch_history[key])
 
             self.optimizer.zero_grad()
+            self.scaler.scale(batch_loss).backward()
+            self.scaler.step(optimizer)
+            self.scaler.update()
 
-            predicitons = self.model(images)
-            
-            batch_loss = torch.zeros(1, requires_grad=True).to(self.device)
-            for scale_id, (preds, targs) in enumerate(zip(predicitons, targets)):
-                
-                scaled_anchors = scale_anchors(
-                    self.anchors[scale_id * 3: (scale_id + 1) * 3], 
-                    self.scales[scale_id],
-                    self.img_width, self.img_height,
-                    device=self.device
-                )
-
-                _batch_loss, batch_history = self.loss_fn(
-                    preds,
-                    targs,
-                    scaled_anchors
-                )
-
-                batch_loss += _batch_loss
-
-                for key in self.history.keys():
-                    self.history[key][epoch].append(batch_history[key])
-
-            batch_loss.backward()
-
-            self.optimizer.step()
-    
-        if self.scheduler:
-            self.scheduler.step()
+            if (batch_num + 1) % self.notify_after == 0:
+                batch_loss = np.round(np.mean(self.history['total_loss'][epoch]), 3)
+                # print(f"EPOCH {epoch} BATCH {batch_num + 1} LOSS {batch_loss}")
+                p_bar.set_postfix(mean_batch_loss=batch_loss)
         
-        avg_epoch_loss = np.mean(self.history['total_loss'][epoch])
-        print(f"EPOCH {epoch} AVG LOSS {np.round(avg_epoch_loss, 3)}")
-
+        # avg_epoch_loss = np.mean(self.history['total_loss'][epoch])
+        # print(f"EPOCH {epoch} AVG LOSS {np.round(avg_epoch_loss, 3)}")
         return None
 
     def _validate_one_epoch(self, epoch):
@@ -186,6 +195,7 @@ class Model:
             "class_loss": [],
             "total_loss": []
         }
+
         for images, targets in self.v_dataloader:
 
             images = images.to(self.device)
@@ -211,6 +221,7 @@ class Model:
 
                     for key in val_epoch_history.keys():
                         val_epoch_history[key].append(val_history[key])
+
 
         for key in val_epoch_history.keys():
             self.val_history[key].append(

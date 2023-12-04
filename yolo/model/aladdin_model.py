@@ -155,7 +155,7 @@ if __name__ == "__main__":
     num_classes = 20
     IMAGE_WIDTH = 640
     IMAGE_HEIGHT = 512
-    model = YOLOv3(num_classes=num_classes)
+    model = AladdenYOLOv3(num_classes=num_classes)
     x = torch.randn((2, 3, IMAGE_HEIGHT, IMAGE_WIDTH))
     out = model(x)
     assert model(x)[0].shape == (2, 3, IMAGE_HEIGHT//32, IMAGE_WIDTH//32, num_classes + 5)

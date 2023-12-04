@@ -134,7 +134,6 @@ class YOLOv3(nn.Module):
         _, p3 = self.pred3((pp2, scale3))
         return (p1, p2, p3)
 
-
 if __name__ == "__main__":
     num_classes = 20
     IMAGE_SIZE = 416
@@ -154,3 +153,4 @@ if __name__ == "__main__":
     for p in model.parameters():
         params += reduce(lambda x, y: x * y, p.shape)
     print(f"The model has {params / 1e6} million parameters")
+

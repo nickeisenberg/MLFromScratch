@@ -141,8 +141,7 @@ notify_after = 1
 #------------------------------------------------------------------------------
 yoloV3 = YOLOv3(image_size[0], num_classes).to(device)
 loss_fn = YoloV3Loss(device=device)
-optimizer = Adam(yoloV3.parameters(), lr=.001)
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.1)
+optimizer = Adam(yoloV3.parameters(), lr=.0001, weight_decay=.00001)
 
 #------------------------------------------------------------------------------
 # Put all of the model inputs into a dictionary to pass into the model
@@ -151,7 +150,6 @@ model_inputs = {
     "model": yoloV3, 
     "loss_fn": loss_fn, 
     "optimizer": optimizer, 
-    "scheduler": scheduler, 
     "t_dataset": t_dataset, 
     "v_dataset": v_dataset,
     "batch_size": batch_size, 

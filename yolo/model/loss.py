@@ -11,6 +11,10 @@ class YoloV3Loss(nn.Module):
         self.cross_entropy = nn.CrossEntropyLoss() 
         self.sigmoid = nn.Sigmoid() 
         self.device = device
+        self.lambda_class = 1
+        self.lambda_noobj = 10
+        self.lambda_obj = 1
+        self.lambda_box = 10
 
     def forward(self, pred, target, scaled_anchors) -> Tuple[torch.Tensor, dict]:
         """
@@ -31,11 +35,11 @@ class YoloV3Loss(nn.Module):
         obj = target[..., 4] == 1
         no_obj = target[..., 4] == 0
 
-        scaled_anchors = scaled_anchors.reshape((1, 3, 1, 1, 2))
-
         no_object_loss = self.bce( 
             (pred[..., 4:5][no_obj]), (target[..., 4:5][no_obj]), 
         )
+
+        scaled_anchors = scaled_anchors.reshape((1, 3, 1, 1, 2))
 
         if obj.sum() > 0:
 
@@ -55,8 +59,8 @@ class YoloV3Loss(nn.Module):
             ) 
 
             # Calculating box coordinate loss
-            target[..., 2: 4] = torch.log(1e-6 + target[..., 2: 4] / scaled_anchors) 
             pred[..., 0: 2] = self.sigmoid(pred[..., 0: 2])
+            target[..., 2: 4] = torch.log(1e-6 + target[..., 2: 4] / scaled_anchors) 
 
             box_loss = self.mse(
                 pred[..., 0: 4][obj], 
@@ -73,7 +77,10 @@ class YoloV3Loss(nn.Module):
             object_loss = torch.tensor([0]).to(self.device)
             class_loss = torch.tensor([0]).to(self.device)
 
-        total_loss = box_loss + object_loss + no_object_loss + class_loss 
+        total_loss = self.lambda_box * box_loss
+        total_loss += self.lambda_obj * object_loss
+        total_loss += self.lambda_noobj * no_object_loss
+        total_loss += self.lambda_class * class_loss 
         
         history = {}
         history["box_loss"] = box_loss.item()
