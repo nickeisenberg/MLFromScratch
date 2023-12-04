@@ -10,7 +10,6 @@ from torchvision.transforms import v2
 from model import YOLOv3, YoloV3Loss
 from utils import Dataset, BuildTarget, AnnotationTransformer
 
-
 #------------------------------------------------------------------------------
 # Set the path to the data
 #------------------------------------------------------------------------------
@@ -142,6 +141,7 @@ notify_after = 1
 yoloV3 = YOLOv3(image_size[0], num_classes).to(device)
 loss_fn = YoloV3Loss(device=device)
 optimizer = Adam(yoloV3.parameters(), lr=.0001, weight_decay=.00001)
+scaler = torch.cuda.amp.GradScaler()
 
 #------------------------------------------------------------------------------
 # Put all of the model inputs into a dictionary to pass into the model
@@ -150,6 +150,7 @@ model_inputs = {
     "model": yoloV3, 
     "loss_fn": loss_fn, 
     "optimizer": optimizer, 
+    "scaler": scaler,
     "t_dataset": t_dataset, 
     "v_dataset": v_dataset,
     "batch_size": batch_size, 

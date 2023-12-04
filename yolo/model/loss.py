@@ -11,10 +11,10 @@ class YoloV3Loss(nn.Module):
         self.cross_entropy = nn.CrossEntropyLoss() 
         self.sigmoid = nn.Sigmoid() 
         self.device = device
-        self.lambda_class = 1
-        self.lambda_noobj = 10
-        self.lambda_obj = 1
-        self.lambda_box = 10
+        self.lambda_class = 1.
+        self.lambda_noobj = 10.
+        self.lambda_obj = 1.
+        self.lambda_box = 10.
 
     def forward(self, pred, target, scaled_anchors) -> Tuple[torch.Tensor, dict]:
         """

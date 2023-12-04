@@ -65,7 +65,7 @@ class Model:
                     self.img_width, self.img_height,
                     device=self.device
                 )
-            for scale_id in self.scales]
+            for scale_id in range(len(self.scales))]
         self.notify_after = notify_after
 
     def fit(self, 
@@ -152,17 +152,17 @@ class Model:
                 batch_loss = torch.zeros(1, requires_grad=True).to(self.device)
                 for scale_id, (preds, targs) in enumerate(zip(predicitons, targets)):
                     
-                    scaled_anchors = scale_anchors(
-                        self.anchors[scale_id * 3: (scale_id + 1) * 3], 
-                        self.scales[scale_id],
-                        self.img_width, self.img_height,
-                        device=self.device
-                    )
+                    # scaled_anchors = scale_anchors(
+                    #     self.anchors[scale_id * 3: (scale_id + 1) * 3], 
+                    #     self.scales[scale_id],
+                    #     self.img_width, self.img_height,
+                    #     device=self.device
+                    # )
 
                     _batch_loss, batch_history = self.loss_fn(
                         preds,
                         targs,
-                        scaled_anchors
+                        self.scaled_anchors[scale_id]
                     )
 
                     batch_loss += _batch_loss
@@ -172,7 +172,7 @@ class Model:
 
             self.optimizer.zero_grad()
             self.scaler.scale(batch_loss).backward()
-            self.scaler.step(optimizer)
+            self.scaler.step(self.optimizer)
             self.scaler.update()
 
             if (batch_num + 1) % self.notify_after == 0:
