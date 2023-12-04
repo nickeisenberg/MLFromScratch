@@ -4,10 +4,10 @@ src_root = "/home/ubuntu/GitRepos/ml_arcs/yolo/train_model"
 dst_root = "/home/nicholas/GitRepos/ml_arcs/yolo/train_model"
 
 files_to_move = [
-    "/state_dicts/yolo_train1.pth",
-    "/state_dicts/yolo_val1.pth",
-    "/lossdfs/train1.csv",
-    "/lossdfs/val1.csv",
+    "/state_dicts/yolo_train3.pth",
+    "/state_dicts/yolo_val3.pth",
+    "/lossdfs/train3.csv",
+    "/lossdfs/val3.csv",
 ]
 
 user = "nicholas"

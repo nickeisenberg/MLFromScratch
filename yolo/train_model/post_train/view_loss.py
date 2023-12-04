@@ -1,7 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-t_path = "/home/nicholas/GitRepos/ml_arcs/yolo/train_model/lossdfs/train1.csv"
+t_path = "/home/nicholas/GitRepos/ml_arcs/yolo/train_model/lossdfs/train3.csv"
 t_loss = pd.read_csv(t_path, index_col=0)
 
 fig, ax = plt.subplots(1, 5, figsize=(12, 5))
