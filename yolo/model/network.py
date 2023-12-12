@@ -89,14 +89,10 @@ class Model:
         for i in range(1, num_epochs + 1):
             self.model.train()
 
+            #--------------------------------------------------
+            # Training
+            #--------------------------------------------------
             self._train_one_epoch(epoch=i)
-
-            self._validate_one_epoch(epoch=i)
-
-            avg_epoch_val_loss = self.val_history['total_loss'][-1]
-            if avg_epoch_val_loss < best_val_loss:
-                best_val_loss = avg_epoch_val_loss
-                torch.save(self.model.state_dict(), save_best_val_model_to)
 
             avg_epoch_train_loss = np.mean(self.history['total_loss'][i])
             if avg_epoch_train_loss < best_train_loss:
@@ -119,6 +115,17 @@ class Model:
                 ).T
 
                 train_df.to_csv(save_train_loss_csv_to)
+            #--------------------------------------------------
+
+            #--------------------------------------------------
+            # Validation
+            #--------------------------------------------------
+            self._validate_one_epoch(epoch=i)
+
+            avg_epoch_val_loss = self.val_history['total_loss'][-1]
+            if avg_epoch_val_loss < best_val_loss:
+                best_val_loss = avg_epoch_val_loss
+                torch.save(self.model.state_dict(), save_best_val_model_to)
 
             if save_val_loss_csv_to:
 
@@ -127,13 +134,14 @@ class Model:
                 ).T
 
                 val_df.to_csv(save_val_loss_csv_to)
+            #--------------------------------------------------
 
         return None
 
     def _train_one_epoch(self, epoch):
         assert isinstance(self.optimizer, torch.optim.Optimizer)
         assert isinstance(self.model, nn.Module)
-
+        
         for key in self.history.keys():
             self.history[key][epoch] = []
 
@@ -227,15 +235,3 @@ class Model:
     def load_state_dict(self, path):
         assert isinstance(self.model, nn.Module)
         self.model.load_state_dict(torch.load(path))
-
-    def produce_annotations(self, img):
-        assert isinstance(self.model, nn.Module)
-        assert isinstance(self.anchors, torch.Tensor)
-        assert isinstance(self.scales, torch.Tensor)
-
-        if len(img.shape) == 3:
-            img = img.unsqueeze(0)
-        elif len(img.shape) < 3 or len(img.shape) > 4:
-            raise Exception("Input either a 3-d image tensor or a batched 4-d tensor")
-
-        output = self.model(img)
