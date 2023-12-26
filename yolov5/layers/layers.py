@@ -3,12 +3,12 @@ import torch
 
 class Conv(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size,
-                 stride, padding, use_bn=True, **kwargs):
+                 stride, padding, use_bn=True, act=nn.SiLU(), **kwargs):
         super().__init__()
         self.use_bn = use_bn
         self.conv = nn.Conv2d(in_channels, out_channels, kernel_size, stride, 
                               padding, bias=False, **kwargs)
-        self.act = nn.SiLU()
+        self.act = act if act is not None else nn.Identity()
         self.bn = nn.BatchNorm2d(out_channels)
 
     def forward(self, x):
@@ -42,11 +42,18 @@ class SPPF(nn.Module):
         return self.conv2(torch.cat(x, 1))
 
 
-class DarknetBlock(nn.Module):
-    def __init__(self):
+class C3(nn.Module):
+    def __init__(self, in_channels, out_channels, num_repeats, residual=True):
         super().__init__()
-        pass
+        _c = out_channels // 2
+        self.conv1 = Conv(in_channels, _c, 1, 1, 0)
+        self.conv2 = Conv(in_channels, _c, 1, 1, 0)
+        self.conv3 = Conv(2 * _c, out_channels, 1, 1, 0)
+        self.b = nn.Sequential(
+            *[Bottleneck(_c, _c, residual) for _ in range(num_repeats)]
+        )
+
+    def forward(self, x):
+        return self.conv3(torch.cat((self.b(self.conv1(x)), self.conv2(x)), 1))
 
 
-    def forward(self):
-        pass
