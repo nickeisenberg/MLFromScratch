@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch
 
+
 class Conv(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size,
                  stride, padding, use_bn=True, act=nn.SiLU(), **kwargs):
@@ -57,3 +58,10 @@ class C3(nn.Module):
         return self.conv3(torch.cat((self.b(self.conv1(x)), self.conv2(x)), 1))
 
 
+class UpAndCat(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, x, skip):
+        x = nn.Upsample(tuple(skip.shape[-2:]))(x)
+        return torch.cat((x, skip), 1)

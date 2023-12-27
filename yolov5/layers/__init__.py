@@ -1,1 +1,1 @@
-from .layers import Conv, Bottleneck, SPPF, C3
+from .layers import Conv, SPPF, C3, UpAndCat
