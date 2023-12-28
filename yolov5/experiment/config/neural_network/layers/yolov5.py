@@ -1,4 +1,4 @@
-from layers import Conv, SPPF, C3, UpAndCat
+from .layers import Conv, SPPF, C3, UpAndCat
 import torch
 import torch.nn as nn
 

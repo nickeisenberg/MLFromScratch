@@ -3,7 +3,7 @@ import torch.nn as nn
 from trfc.dataset.objdet.utils.yolo import iou
 from typing import Tuple
 
-class YoloLoss(nn.Module):
+class YOLOLoss(nn.Module):
     def __init__(self, device):
         super().__init__()
         self.mse = nn.MSELoss(reduction='mean') 
