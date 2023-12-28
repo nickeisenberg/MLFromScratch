@@ -37,7 +37,3 @@ coco_dataset = COCODataset(
     fix_file_path="/home/nicholas/Datasets/flir/images_thermal_train",
     target_transform=yoloTarget.build
 )
-
-print(coco_dataset[0][1][0].shape)
-print(coco_dataset[0][1][1].shape)
-print(coco_dataset[0][1][2].shape)
