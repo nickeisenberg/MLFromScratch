@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from utils import iou
+from trfc.dataset.objdet.utils.yolo import iou
 from typing import Tuple
 
 class YoloLoss(nn.Module):

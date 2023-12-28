@@ -60,7 +60,8 @@ class YOLOv5(nn.Module):
         for layer in self.head:
             if isinstance(layer, nn.Conv2d):
                 pred = layer(x)
-                self.predictions.append(
+                self.predictions.insert(
+                    0,
                     pred.view(
                         pred.shape[0], 3, 5 + self.num_classes, pred.shape[-2], pred.shape[-1]
                     ).permute(0, 1, 3, 4, 2)
