@@ -1,3 +1,4 @@
+from torch.utils.data.dataset import Subset
 from trfc.dataset.objdet.utils.yolo import ConstructAnchors, YOLOTarget
 from trfc.dataset.objdet import COCODataset
 from trfc.dataset.objdet.utils import COCOjsonTransformer
@@ -30,7 +31,7 @@ class_names = coco_train.class_names
 class_id_mapper = coco_train.class_id_mapper
 
 anchors = ConstructAnchors(coco_train.coco, 640, 512).anchors[:, 1:].to(torch.float32)
-scales = torch.tensor([32, 16, 8], dtype=torch.float32)
+scales = torch.tensor([32, 16, 8], dtype=torch.int32)
 
 yoloTarget = YOLOTarget(class_id_mapper, anchors, scales, 640, 512)
 
@@ -60,10 +61,11 @@ val_dataset = COCODataset(
     "val_dataset",
     class_names=class_names,
     class_id_mapper=class_id_mapper,
-    fix_file_path="/home/nicholas/Datasets/flir/images_thermal_train",
+    fix_file_path="/home/nicholas/Datasets/flir/images_thermal_val",
     target_transform=target_transform,
     img_transform=img_transform
 )
 
 train_dataloader = DataLoader(train_dataset, batch_size=2, shuffle=True)
+
 val_dataloader = DataLoader(val_dataset, batch_size=2, shuffle=False)

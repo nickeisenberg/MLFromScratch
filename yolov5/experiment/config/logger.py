@@ -6,15 +6,23 @@ class Logger(CSVLogger):
 
         super().__init__()
 
-        self.best_loss = 1e6
+        self.train_best_loss = 1e6
+        self.val_best_loss = 1e6
 
-    def check(self) -> bool:
+    def check(self, train) -> bool:
         avg_epoch_loss = np.mean(self.history["total_loss"])
-    
-        if avg_epoch_loss < self.best_loss:
-            self.best_loss = avg_epoch_loss
-            return True
+        
+        if train:
+            if avg_epoch_loss < self.train_best_loss:
+                self.train_best_loss = avg_epoch_loss
+                return True
+            else:
+                return False
         else:
-            return False
+            if avg_epoch_loss < self.val_best_loss:
+                self.val_best_loss = avg_epoch_loss
+                return True
+            else:
+                return False
 
 logger = Logger()
