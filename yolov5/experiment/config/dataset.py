@@ -29,14 +29,12 @@ coco_val = COCOjsonTransformer(val, instructions, 40, 40)
 class_names = coco_train.class_names
 class_id_mapper = coco_train.class_id_mapper
 
-anchors = ConstructAnchors(coco_train.coco, 640, 512).anchors[:, 1:]
-scales = torch.tensor([32, 16, 8])
+anchors = ConstructAnchors(coco_train.coco, 640, 512).anchors[:, 1:].to(torch.float32)
+scales = torch.tensor([32, 16, 8], dtype=torch.float32)
 
 yoloTarget = YOLOTarget(class_id_mapper, anchors, scales, 640, 512)
 
 target_transform = yoloTarget.build
-
-import torch
 
 _img_transform = transforms.Compose([
     transforms.PILToTensor(),
@@ -67,5 +65,5 @@ val_dataset = COCODataset(
     img_transform=img_transform
 )
 
-train_dataloader = DataLoader(train_dataset, batch_size=10, shuffle=True)
-val_dataloader = DataLoader(val_dataset, batch_size=10, shuffle=False)
+train_dataloader = DataLoader(train_dataset, batch_size=2, shuffle=True)
+val_dataloader = DataLoader(val_dataset, batch_size=2, shuffle=False)

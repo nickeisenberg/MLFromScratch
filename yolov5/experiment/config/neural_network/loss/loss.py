@@ -16,6 +16,7 @@ class YOLOLoss(nn.Module):
         self.lambda_obj = 1.
         self.lambda_box = 10.
 
+
     def forward(self, pred, target, scaled_anchors) -> Tuple[torch.Tensor, dict]:
         """
         Recall that the pred and target is a tuple of 3 tensors. As of now,

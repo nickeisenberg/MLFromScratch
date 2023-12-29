@@ -1,10 +1,7 @@
 from trfc.evaluator.base import _Evaluator
 
 class Evaluator(_Evaluator):
-    def gather_results(self,
-                       network,
-                       save_folder,
-                       device): 
+    def gather_results(self, network, save_folder, device): 
         pass
 
 

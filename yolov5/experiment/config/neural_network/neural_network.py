@@ -1,5 +1,6 @@
 import torch
 from trfc.algo.base import ObjDet
+from trfc.dataset.objdet.utils.yolo import scale_anchors
 from torch.optim import Adam
 from torch.cuda import is_available
 from torch import save as save_model
@@ -7,15 +8,15 @@ from experiment.config.neural_network.layers import YOLOv5
 from experiment.config.neural_network.loss import YOLOLoss
 from experiment.config.dataset import anchors, scales
 
-device = "cuda" if is_available() else "cpu"
-
-device = "cpu"
-
 class YOLOv5Network(ObjDet):
-    def __init__(self):
+    def __init__(self, device):
         super().__init__(name="yolov5_test")
-        self.yolov5 = YOLOv5(1, 5)
-        self.optimizer = Adam(self.parameters())
+        
+        self.device = device
+
+        self.yolov5 = YOLOv5(1, 5).to(device)
+        self.optimizer = Adam(self.parameters(), lr=.0001, weight_decay=.00001)
+        self.scaler = torch.cuda.amp.GradScaler()
         self.loss_fn = YOLOLoss(device)
 
         self.scales = scales.to(device)
@@ -24,30 +25,43 @@ class YOLOv5Network(ObjDet):
             scale_anchors(
                 self.anchors[scale_id * 3: (scale_id + 1) * 3], 
                 self.scales[scale_id],
-                self.img_width, self.img_height,
-                device=self.device
+                640, 512,
+                device=device
             )
         for scale_id in range(len(self.scales))]
 
     def forward(self, inputs):
         return self.yolov5(inputs)
 
-
     def batch_pass(self, inputs, targets):
-        with torch.cuda.amp.autocast_mode.autocast():
+        batch_history = {
+            "box_loss": [],
+            "object_loss": [],
+            "no_object_loss": [],
+            "class_loss": [],
+            "total_loss": [],
+        }
 
-            predicitons = self.model(inputs)
+
+        inputs = inputs.to(self.device, torch.float32)
+        with torch.cuda.amp.autocast():
+
+            predicitons = self.forward(inputs)
+            targets = tuple([target.to(self.device, torch.float32) for target in targets])
             
-            batch_loss = torch.zeros(1, requires_grad=True).to(self.device)
+            batch_loss = torch.zeros(
+                1, requires_grad=True).to(self.device, torch.float32)
             for scale_id, (preds, targs) in enumerate(zip(predicitons, targets)):
-
-                _batch_loss, batch_history = self.loss_fn(
+                _batch_loss, _batch_history = self.loss_fn(
                     preds,
                     targs,
                     self.scaled_anchors[scale_id]
                 )
 
-                batch_loss += _batch_loss
+                batch_loss = batch_loss + _batch_loss.to(torch.float32)
+                
+                for key in batch_history.keys():
+                    batch_history[key].append(_batch_history[key])
 
             if self.training:
                 self.optimizer.zero_grad()
@@ -55,14 +69,19 @@ class YOLOv5Network(ObjDet):
                 self.scaler.step(self.optimizer)
                 self.scaler.update()
 
-        return loss, batch_history
-
+        return batch_loss, batch_history
 
     def evaluate(self, inputs):
         pass
         
-    
     def save(self, path: str):
         save_model(self.state_dict(), path)
 
-yolov5Network = YOLOv5Network()
+device = "cuda" if is_available() else "cpu"
+
+yolov5Network = YOLOv5Network(device=device)
+
+# for inps, targs in train_dataloader:
+#     inps, targs = inps.to(device), [targ.to(device) for targ in targs]
+#     x = yolov5Network.batch_pass(inps, targs)
+#     break
